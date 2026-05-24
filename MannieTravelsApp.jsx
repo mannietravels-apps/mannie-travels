@@ -1,0 +1,1800 @@
+import { useState, useRef, useEffect } from "react";
+var CN1="bg-slate-900/60 rounded-2xl border border-slate-800/60 p-4 space-y-3";
+var CN2="bg-slate-900/60 rounded-2xl border border-slate-800/60 p-4";
+var CN3="min-h-screen bg-slate-950 text-white";
+var CN4="text-white font-semibold font-sans";
+var CN5="text-slate-400 text-xs font-sans";
+var CN6="text-slate-500 text-xs font-sans";
+var CN7="flex items-center gap-2";
+var CN8="flex items-center gap-3";
+var CN9="flex items-center justify-between";
+ var CN10="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 px-5 pb-4 border-b border-slate-800";
+ var CN11="bg-slate-800 border border-slate-700 text-slate-300 text-sm px-3 py-1.5 rounded-xl font-sans";
+var CN12="text-xs text-orange-400 font-sans uppercase tracking-widest truncate";
+var CN13="text-xl font-bold text-white";
+ var CN14="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/70 font-sans text-sm";
+ var CN15="block text-xs text-slate-400 uppercase tracking-wider mb-1.5 font-sans";
+var CN16="text-orange-400";
+ const DAYS_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+ const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+ const AUD = {AUD:1,USD:1.52,EUR:1.65,GBP:1.93,JPY:0.0099,THB:0.044,SGD:1.13,NZD:0.92};
+function fmtFull(ds) {
+  if (!ds) return "";
+  var d = new Date(ds + "T12:00:00");
+  if (isNaN(d.getTime())) return ds;
+ return DAYS_NAMES[d.getDay()] + ", " + d.getDate() + " " + MONTH_NAMES[d.getMonth()] + " " + d.getFullYear();
+}
+function fmtShort(ds) {
+  if (!ds) return "TBD";
+  var d = new Date(ds + "T12:00:00");
+  if (isNaN(d.getTime())) return ds;
+ return d.getDate() + " " + MONTH_NAMES[d.getMonth()].slice(0,3) + " " + d.getFullYear();
+}
+function calcDuration(depDate, depTime, arrDate, arrTime) {
+  if (!depTime || !arrTime) return "";
+  var dp = depTime.split(":");
+  var ap = arrTime.split(":");
+  if (dp.length < 2 || ap.length < 2) return "";
+  var depMins = parseInt(dp[0], 10) * 60 + parseInt(dp[1], 10);
+  var arrMins = parseInt(ap[0], 10) * 60 + parseInt(ap[1], 10);
+  var dayDiff = 0;
+  if (depDate && arrDate && arrDate !== depDate) {
+    var d1 = new Date(depDate + "T12:00:00");
+    var d2 = new Date(arrDate + "T12:00:00");
+    dayDiff = Math.round((d2 - d1) / 86400000);
+  }
+  var diff = arrMins - depMins + (dayDiff * 24 * 60);
+  if (diff <= 0 && dayDiff === 0) diff += 24 * 60; // same-day overnight
+  if (diff <= 0) return "";
+  var days = Math.floor(diff / (24 * 60));
+  var h    = Math.floor((diff % (24 * 60)) / 60);
+  var m    = diff % 60;
+  var parts = [];
+  if (days > 0) parts.push(days + "d");
+  if (h > 0)    parts.push(h + "h");
+  if (m > 0)    parts.push(m + "m");
+  return parts.join(" ");
+}
+function toAUD(cost, currency) {
+  var rate = AUD[currency] || 1;
+  return Math.round((parseFloat(cost) || 0) * rate);
+}
+function makeDays(startDate, count, existingEvents) {
+  var result = [];
+  var base = startDate ? new Date(startDate + "T12:00:00") : new Date();
+  for (var i = 0; i < count; i++) {
+    var d = new Date(base);
+    d.setDate(base.getDate() + i);
+    var yyyy = d.getFullYear();
+    var mm = String(d.getMonth() + 1).padStart(2, "0");
+    var dd = String(d.getDate()).padStart(2, "0");
+    var ds = yyyy + "-" + mm + "-" + dd;
+    var evs = (existingEvents && existingEvents[i]) ? existingEvents[i] : [];
+ result.push({ id: "d" + (i + 1), label: "Day " + (i + 1), date: ds, events: evs });
+  }
+  return result;
+}
+var TRIPS0 = [];
+var CN17={CN17};
+var CN18={CN18};
+var CN19={CN19};
+var CN20={CN20};
+var CN21={CN21};
+var CN22={CN22};
+var CN23={CN23};
+var CN24={CN24};
+var CN25={CN25};
+var CN26={CN26};
+ var AUD_RATES={AUD:1,USD:1.52,EUR:1.65,GBP:1.93,JPY:0.0099,THB:0.044,SGD:1.13,NZD:0.92};
+var ETYPES = [
+  {t:"Flight",i:"✈️"},{t:"Hotel",i:"🏨"},{t:"Train",i:"🚆"},{t:"Bus",i:"🚌"},
+  {t:"Taxi",i:"🚖"},{t:"Car Rental",i:"🚗"},{t:"Ferry",i:"⛴️"},{t:"Food",i:"🍽️"},
+ {t:"Drinks",i:"☕"},{t:"Sightseeing",i:"🗺️"},{t:"Attractions",i:"🎡"},{t:"Activity",i:"🎭"},
+  {t:"Shopping",i:"🛍️"},{t:"Beach",i:"🏖️"},{t:"Medical",i:"💊"},{t:"Other",i:"📌"}
+];
+var CURS = [
+  {code:"AUD",sym:"A$"},{code:"USD",sym:"$"},{code:"GBP",sym:"£"},
+  {code:"EUR",sym:"€"},{code:"JPY",sym:"¥"},{code:"THB",sym:"฿"},
+  {code:"SGD",sym:"S$"},{code:"NZD",sym:"NZ$"}
+];
+ var FLIGHTS={"QF7821":{al:"Qantas",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"06:45",ac:"NRT",aCity:"Tokyo Narita",aTerm:"T2",arr:"18:30",plane:"Boeing 787-9",dur:"11h 45m"},"QF1":{al:"Qantas",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"16:55",ac:"DXB",aCity:"Dubai",aTerm:"T1",arr:"05:40",plane:"Airbus A380",dur:"14h 45m"},"QF11":{al:"Qantas",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"09:00",ac:"LAX",aCity:"Los Angeles",aTerm:"T8",arr:"06:15",plane:"Airbus A380",dur:"14h 15m"},"QF9":{al:"Qantas",dc:"MEL",dCity:"Melbourne",dTerm:"T2",dep:"21:30",ac:"LHR",aCity:"London Heathrow",aTerm:"T3",arr:"05:00",plane:"Boeing 787-9",dur:"21h 30m"},"QF93":{al:"Qantas",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"08:15",ac:"DPS",aCity:"Bali",aTerm:"T2",arr:"11:30",plane:"Boeing 737",dur:"6h 15m"},"EK409":{al:"Emirates",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"09:30",ac:"DXB",aCity:"Dubai",aTerm:"T3",arr:"18:10",plane:"Airbus A380",dur:"14h 40m"},"EK413":{al:"Emirates",dc:"MEL",dCity:"Melbourne",dTerm:"T2",dep:"22:30",ac:"DXB",aCity:"Dubai",aTerm:"T3",arr:"05:45",plane:"Airbus A380",dur:"14h 15m"},"EK419":{al:"Emirates",dc:"BNE",dCity:"Brisbane",dTerm:"Int",dep:"19:00",ac:"DXB",aCity:"Dubai",aTerm:"T3",arr:"05:35",plane:"Airbus A380",dur:"14h 35m"},"EK304":{al:"Emirates",dc:"BKK",dCity:"Bangkok",dTerm:"Main",dep:"23:45",ac:"DXB",aCity:"Dubai",aTerm:"T3",arr:"03:55",plane:"Boeing 777",dur:"7h 10m"},"QR900":{al:"Qatar Airways",dc:"DOH",dCity:"Doha",dTerm:"Main",dep:"02:00",ac:"SYD",aCity:"Sydney",aTerm:"T1",arr:"22:00",plane:"Airbus A380",dur:"17h 00m"},"QR901":{al:"Qatar Airways",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"23:30",ac:"DOH",aCity:"Doha",aTerm:"Main",arr:"05:45",plane:"Airbus A380",dur:"15h 15m"},"QR908":{al:"Qatar Airways",dc:"DOH",dCity:"Doha",dTerm:"Main",dep:"08:45",ac:"MEL",aCity:"Melbourne",aTerm:"T2",arr:"06:00",plane:"Airbus A380",dur:"17h 15m"},"EY454":{al:"Etihad",dc:"AUH",dCity:"Abu Dhabi",dTerm:"T3",dep:"21:55",ac:"SYD",aCity:"Sydney",aTerm:"T1",arr:"20:05",plane:"Airbus A380",dur:"14h 10m"},"EY455":{al:"Etihad",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"21:30",ac:"AUH",aCity:"Abu Dhabi",aTerm:"T3",arr:"05:15",plane:"Airbus A380",dur:"13h 45m"},"SQ221":{al:"Singapore Airlines",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"21:55",ac:"SIN",aCity:"Singapore",aTerm:"T3",arr:"05:55",plane:"Airbus A380",dur:"8h 00m"},"SQ231":{al:"Singapore Airlines",dc:"MEL",dCity:"Melbourne",dTerm:"T2",dep:"21:20",ac:"SIN",aCity:"Singapore",aTerm:"T3",arr:"04:55",plane:"Airbus A380",dur:"7h 35m"},"MH122":{al:"Malaysia Airlines",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"15:15",ac:"KUL",aCity:"Kuala Lumpur",aTerm:"T1",arr:"20:45",plane:"Airbus A330",dur:"8h 30m"},"JQ15":{al:"Jetstar",dc:"SYD",dCity:"Sydney",dTerm:"T2",dep:"07:55",ac:"DPS",aCity:"Bali",aTerm:"T2",arr:"11:20",plane:"Airbus A330",dur:"6h 25m"},"TR11":{al:"Scoot",dc:"SYD",dCity:"Sydney",dTerm:"T1",dep:"07:50",ac:"SIN",aCity:"Singapore",aTerm:"T3",arr:"13:50",plane:"Boeing 787-9",dur:"8h 00m"},"VA7":{al:"Virgin Australia",dc:"SYD",dCity:"Sydney",dTerm:"T2",dep:"07:30",ac:"LAX",aCity:"Los Angeles",aTerm:"T3",arr:"04:45",plane:"Boeing 777",dur:"14h 15m"}};
+var TC = {
+  Flight:"text-blue-300 bg-blue-500/15 border-blue-500/30",
+  Hotel:"text-purple-300 bg-purple-500/15 border-purple-500/30",
+  Train:"text-green-300 bg-green-500/15 border-green-500/30",
+  Taxi:"text-amber-300 bg-amber-500/15 border-amber-500/30",
+  Bus:"text-lime-300 bg-lime-500/15 border-lime-500/30",
+  Ferry:"text-cyan-300 bg-cyan-500/15 border-cyan-500/30",
+  Food:"text-orange-300 bg-orange-500/15 border-orange-500/40",
+  Drinks:"text-yellow-300 bg-yellow-500/15 border-yellow-500/30",
+  Sightseeing:"text-teal-300 bg-teal-500/15 border-teal-500/30",
+  Attractions:"text-indigo-300 bg-indigo-500/15 border-indigo-500/30",
+  Activity:"text-pink-300 bg-pink-500/15 border-pink-500/30",
+  Shopping:"text-rose-300 bg-rose-500/15 border-rose-500/30",
+  Beach:"text-sky-300 bg-sky-500/15 border-sky-500/30",
+  Medical:"text-red-300 bg-red-500/15 border-red-500/30",
+  Other:"text-slate-300 bg-slate-500/15 border-slate-500/30"
+};
+var SC = {
+ upcoming:{label:"Upcoming",color:"bg-orange-500/20 text-orange-300 border-orange-500/40"},
+ planning:{label:"Planning",color:"bg-indigo-500/20 text-indigo-300 border-indigo-500/40"},
+ completed:{label:"Completed",color:"bg-emerald-500/20 text-emerald-300 border-emerald-500/40"}
+};
+function CopyBtn(props) {
+  var text = props.text;
+  var copied = useState(false);
+  var isCopied = copied[0];
+  var setCopied = copied[1];
+  function handleClick(e) {
+    e.stopPropagation();
+    try { navigator.clipboard.writeText(text); } catch(err) {}
+    setCopied(true);
+    setTimeout(function() { setCopied(false); }, 1400);
+  }
+  return (
+ <button onClick={handleClick} className="ml-1 text-xs px-1.5 py-0.5 rounded bg-slate-700/60 hover:bg-slate-600 text-slate-500 hover:text-white shrink-0">
+      {isCopied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+var ADDRS="Sydney Kingsford Smith Airport, Terminal 1, Sydney NSW 2020|Sydney Airport Terminal 2 Domestic, NSW 2020|Melbourne Airport, Tullamarine VIC 3045|Brisbane Airport, Brisbane QLD 4008|Perth Airport, Perth WA 6105|Adelaide Airport, Adelaide SA 5950|Gold Coast Airport, Bilinga QLD 4225|Cairns Airport, Cairns QLD 4870|Dubai International Airport Terminal 1, Dubai, UAE|Dubai International Airport Terminal 3, Dubai, UAE|Abu Dhabi International Airport, Abu Dhabi, UAE|Doha Hamad International Airport, Qatar|Narita International Airport, Narita, Chiba, Japan|Haneda Airport, Ota City, Tokyo, Japan|Kansai International Airport, Osaka, Japan|Suvarnabhumi Airport, Bangkok, Thailand|Singapore Changi Airport, Singapore|Bali Ngurah Rai International Airport, Denpasar, Bali|Kuala Lumpur International Airport, Sepang, Malaysia|Incheon International Airport, Seoul, South Korea|Hong Kong International Airport, Lantau|Heathrow Airport, London TW6, UK|Charles de Gaulle Airport, Paris, France|New York JFK Airport, Queens, New York, USA|Los Angeles International Airport, Los Angeles, USA|Maldives Velana International Airport, Male, Maldives|Tokyo Station, Chiyoda City, Tokyo, Japan|Shinjuku Station, Shinjuku, Tokyo, Japan|Shinjuku Granbell Hotel, 2-14-5 Kabukicho, Shinjuku, Tokyo|Park Hyatt Tokyo, 3-7-1 Nishi-Shinjuku, Tokyo|The Ritz-Carlton Tokyo, 9-7-1 Akasaka, Minato, Tokyo|Andaz Tokyo, 1-23-4 Toranomon, Minato, Tokyo|Conrad Tokyo, 1-9-1 Higashi-Shinbashi, Minato, Tokyo|Senso-ji Temple, 2-3-1 Asakusa, Taito City, Tokyo|Shibuya Crossing, Shibuya City, Tokyo, Japan|Kyoto Station, Shimogyo Ward, Kyoto, Japan|Nishiki Market, Nakagyo, Kyoto, Japan|Gion, Higashiyama Ward, Kyoto, Japan|Fushimi Inari Shrine, Fushimi Ward, Kyoto, Japan|The Ritz-Carlton Kyoto, Kamogawa Nijo, Nakagyo, Kyoto|Four Seasons Hotel Kyoto, Sanjusangendo, Higashiyama, Kyoto|Dotonbori, Namba, Chuo Ward, Osaka, Japan|Capella Bangkok, 300-2 Charoenkrung Road, Bangrak, Bangkok|Mandarin Oriental Bangkok, 48 Oriental Avenue, Bang Rak, Bangkok|The Peninsula Bangkok, 333 Charoennakorn Road, Khlong San, Bangkok|COMO Metropolitan Bangkok, 27 South Sathorn Road, Bangkok|Four Seasons Hotel Bangkok, Charoen Krung Road, Bangkok|Khao San Road, Banglamphu, Phra Nakhon, Bangkok|Sukhumvit Road, Khlong Toei, Bangkok|Grand Palace, Phra Nakhon, Bangkok|Marina Bay Sands, 10 Bayfront Avenue, Singapore|Raffles Hotel Singapore, 1 Beach Road, Singapore|The Fullerton Hotel Singapore, 1 Fullerton Square, Singapore|Gardens by the Bay, 18 Marina Gardens Drive, Singapore|Atlantis The Palm, Crescent Road, Palm Jumeirah, Dubai, UAE|Atlantis The Royal, Palm Jumeirah, Dubai, UAE|Burj Al Arab, Jumeirah Beach Road, Umm Suqeim, Dubai, UAE|Burj Khalifa, 1 Sheikh Mohammed bin Rashid Blvd, Downtown Dubai|Dubai Mall, Financial Centre Road, Downtown Dubai, UAE|Palm Jumeirah, Dubai, UAE|Jumeirah Beach Hotel, Jumeirah Beach Road, Dubai, UAE|Four Seasons Resort Dubai at Jumeirah Beach, Jumeirah, Dubai|Waldorf Astoria Dubai Palm Jumeirah, Palm Jumeirah, Dubai, UAE|One and Only Royal Mirage, Al Sufouh Road, Dubai, UAE|Sofitel Dubai The Palm, East Crescent, Palm Jumeirah, Dubai, UAE|W Dubai The Palm, West Crescent, Palm Jumeirah, Dubai, UAE|The Ritz-Carlton Dubai, JBR Walk, Jumeirah Beach Residence, Dubai|FIVE Palm Jumeirah, Palm Jumeirah, Dubai, UAE|Anantara The Palm Dubai Resort, Palm Jumeirah, Dubai, UAE|Caesars Palace Dubai, West Crescent, Palm Jumeirah, Dubai, UAE|Madinat Jumeirah, Al Sufouh Road, Umm Suqeim, Dubai, UAE|Emirates Palace, Corniche Road West, Abu Dhabi, UAE|The Savoy, Strand, London WC2R, UK|Claridges, Brook Street, Mayfair, London W1K, UK|The Ritz London, 150 Piccadilly, London W1J, UK|The Dorchester, Park Lane, London W1K, UK|Hotel Ritz Paris, 15 Place Vendome, Paris, France|Four Seasons Hotel George V, 31 Avenue George V, Paris, France|Eiffel Tower, Champ de Mars, Paris, France|Louvre Museum, Rue de Rivoli, Paris, France|Hotel Hassler Roma, Piazza Trinita dei Monti, Rome, Italy|Colosseum, Piazza del Colosseo, Rome, Italy|Hotel Arts Barcelona, 19-21 Carrer de la Marina, Barcelona|La Sagrada Familia, Carrer de Mallorca, Barcelona, Spain|JK Place Capri, Via Provinciale Marina Grande, Capri, Italy|Santorini, Cyclades, Greece|Mykonos, Cyclades, Greece|Four Seasons Resort Bali at Sayan, Sayan, Ubud, Bali|COMO Uma Ubud, Jalan Raya Sanggingan, Ubud, Bali|Alila Villas Uluwatu, Jalan Belimbing Sari, Uluwatu, Bali|Seminyak Beach, Seminyak, Kuta, Badung Regency, Bali|Kuta Beach, Kuta, Badung Regency, Bali, Indonesia|Tanah Lot Temple, Beraban, Tabanan Regency, Bali|Ubud, Gianyar Regency, Bali, Indonesia|Nusa Penida, Klungkung Regency, Bali, Indonesia|Velaa Private Island, Noonu Atoll, Maldives|Soneva Jani, Noonu Atoll, Maldives|Conrad Maldives Rangali Island, South Ari Atoll, Maldives|Park Hyatt Maldives Hadahaa, Gaafu Alifu Atoll, Maldives|Anantara Kihavah Maldives Villas, Baa Atoll, Maldives|Gili Lankanfushi, North Male Atoll, Maldives|The Plaza Hotel, Fifth Avenue, New York, NY, USA|The Beverly Hills Hotel, 9641 Sunset Blvd, Beverly Hills, CA, USA|Hotel de Russie, Via del Babuino 9, Rome, Italy|Rome Cavalieri Waldorf Astoria, Via Alberto Cadlolo 101, Rome, Italy|The St Regis Rome, Via Vittorio Emanuele Orlando 3, Rome, Italy|Hotel Eden Rome, Via Ludovisi 49, Rome, Italy|Hotel Cipriani, Giudecca 10, Venice, Italy|Aman Venice, Calle Tiepolo, San Polo, Venice, Italy|The Gritti Palace, Campo Santa Maria del Giglio, Venice, Italy|Belmond Hotel Splendido, Viale Baratta 16, Portofino, Italy|Grand Hotel Tremezzo, Via Regina 8, Lake Como, Italy|Villa d Este, Via Regina 40, Cernobbio, Lake Como, Italy|Four Seasons Hotel Firenze, Borgo Pinti 99, Florence, Italy|Il San Pietro di Positano, Via Laurito 2, Positano, Italy|Le Sirenuse, Via Cristoforo Colombo 30, Positano, Italy|Palazzo Avino, Via San Giovanni del Toro 28, Ravello, Amalfi Coast, Italy|Capri Palace Jumeirah, Via Capodimonte 14, Capri, Italy|Mandarin Oriental Barcelona, Passeig de Gracia 38, Barcelona, Spain|Cotton House Hotel, Gran Via de les Corts Catalanes 670, Barcelona, Spain|Four Seasons Hotel Madrid, Calle de Sevilla 3, Madrid, Spain|Hotel Villa Magna, Paseo de la Castellana 22, Madrid, Spain|La Alhambra, Calle Real de la Alhambra, Granada, Spain|Marbella Club Hotel, Boulevard Principe Alfonso von Hohenlohe, Marbella, Spain|Mandarin Oriental Paris, 251 Rue Saint-Honore, Paris, France|Hotel Lutetia, 45 Boulevard Raspail, Paris, France|Shangri-La Hotel Paris, 10 Avenue d Iena, Paris, France|Cheval Blanc Paris, 8 Quai du Louvre, Paris, France|Hotel de Crillon, 10 Place de la Concorde, Paris, France|Hotel du Cap-Eden-Roc, Boulevard Kennedy, Antibes, France|Hotel Martinez, 73 Boulevard de la Croisette, Cannes, France|45 Park Lane, 45 Park Lane, London W1K, UK|Mandarin Oriental Hyde Park, 66 Knightsbridge, London SW1X, UK|Four Seasons London at Park Lane, Hamilton Place, London W1J, UK|The Berkeley, Wilton Place, Knightsbridge, London SW1X, UK|Bvlgari Hotel London, 171 Knightsbridge, London SW7, UK|Gleneagles Hotel, Auchterarder, Perthshire, Scotland, UK|Katikies Hotel, Oia, Santorini, Greece|Canaves Oia Suites, Oia, Santorini, Greece|Mystique Hotel Santorini, Oia, Santorini, Greece|Grace Hotel Santorini, Imerovigli, Santorini, Greece|Belvedere Hotel Mykonos, School of Fine Arts, Mykonos, Greece|Santa Marina Mykonos, Ornos Bay, Mykonos, Greece|Hotel Grande Bretagne, Syntagma Square, Athens, Greece|Amanzoe, Porto Heli, Argolida, Greece|Bairro Alto Hotel, Praca Luis de Camoes 2, Lisbon, Portugal|Four Seasons Hotel Ritz Lisbon, Rua Rodrigo da Fonseca 88, Lisbon, Portugal|Hotel Adlon Kempinski, Unter den Linden 77, Berlin, Germany|Hotel Sacher Wien, Philharmoniker Strasse 4, Vienna, Austria|The Chedi Andermatt, Gotthardstrasse 4, Andermatt, Switzerland|Badrutt Palace Hotel, Via Serlas 27, St Moritz, Switzerland|Conservatorium Hotel Amsterdam, Van Baerlestraat 27, Amsterdam, Netherlands|Capella Ubud, Desa Keliki, Tegallalang, Ubud, Bali, Indonesia|Alila Ubud, Desa Melinggih Kelod, Payangan, Ubud, Bali, Indonesia|Komaneka at Bisma, Jalan Bisma, Ubud, Bali, Indonesia|Mandapa Ritz-Carlton Reserve, Jalan Kedewatan, Ubud, Bali, Indonesia|Viceroy Bali, Jalan Lanyahan, Ubud, Bali, Indonesia|Bulgari Resort Bali, Jalan Goa Lempeh, Uluwatu, Bali, Indonesia|Banyan Tree Ungasan, Jalan Melasti, Ungasan, Bali, Indonesia|The Mulia Bali, Jalan Raya Nusa Dua Selatan, Nusa Dua, Bali|St Regis Bali Resort, Kawasan Pariwisata, Nusa Dua, Bali, Indonesia|COMO Shambhala Estate, Banjar Begawan, Payangan, Ubud, Bali|Ayana Resort and Spa Bali, Jalan Karang Mas Sejahtera, Jimbaran, Bali|Locavore, Jalan Dewi Sita, Ubud, Bali, Indonesia|Mozaic Restaurant, Jalan Raya Sanggingan, Ubud, Bali, Indonesia|Tegallalang Rice Terraces, Tegallalang, Ubud, Bali, Indonesia|Mount Batur, Kintamani, Bangli Regency, Bali, Indonesia|Uluwatu Temple, Pecatu, Kuta Selatan, Bali, Indonesia|Park Hyatt Saigon, 2 Lam Son Square, Ho Chi Minh City, Vietnam|Capella Hanoi, 11 Le Phung Hieu, Hoan Kiem, Hanoi, Vietnam|Sofitel Legend Metropole Hanoi, 15 Ngo Quyen, Hoan Kiem, Hanoi, Vietnam|JW Marriott Hotel Hanoi, 8 Do Duc Duc, Me Tri, Hanoi, Vietnam|Four Seasons Hotel Hanoi, 4 Ngo Quyen, Hoan Kiem, Hanoi, Vietnam|Four Seasons Resort The Nam Hai Hoi An, Dien Ban, Quang Nam, Vietnam|Anantara Hoi An Resort, 1 Pham Hong Thai, Hoi An, Quang Nam, Vietnam|Rosewood Phu Quoc, Ong Lang Beach, Phu Quoc, Kien Giang, Vietnam|JW Marriott Phu Quoc Emerald Bay, Khem Beach, Phu Quoc, Vietnam|InterContinental Phu Quoc Long Beach Resort, Bai Truong, Phu Quoc, Vietnam|Six Senses Con Dao, Dat Doc Beach, Con Dao, Vietnam|Amanoi, Vinh Hy Bay, Ninh Hai, Ninh Thuan, Vietnam|Noi Bai International Airport, Soc Son, Hanoi, Vietnam|Tan Son Nhat International Airport, Tan Binh, Ho Chi Minh City, Vietnam|Da Nang International Airport, Hai Chau, Da Nang, Vietnam|Phu Quoc International Airport, Phu Quoc, Kien Giang, Vietnam|Hoan Kiem Lake, Hoan Kiem, Hanoi, Vietnam|Old Quarter Hanoi, Hoan Kiem, Hanoi, Vietnam|Hoi An Ancient Town, Hoi An, Quang Nam, Vietnam|Ha Long Bay, Quang Ninh, Vietnam".split("|");
+function AddrField(props) {
+  var value = props.value;
+  var onChange = props.onChange;
+  var hitsState = useState([]);
+  var hits = hitsState[0];
+  var setHits = hitsState[1];
+  var openState = useState(false);
+  var open = openState[0];
+  var setOpen = openState[1];
+  function handleType(v) {
+    onChange(v);
+    if (v.length > 1) {
+      var q = v.toLowerCase().trim();
+      var words = q.split(/\s+/);
+      var matches = [];
+      for (var i = 0; i < ADDRS.length; i++) {
+        var addr = ADDRS[i].toLowerCase();
+        var hit = false;
+        for (var w = 0; w < words.length; w++) {
+ if (words[w].length > 1 && addr.indexOf(words[w]) !== -1) { hit = true; break; }
+        }
+        if (hit) {
+          matches.push(ADDRS[i]);
+          if (matches.length >= 8) break;
+        }
+      }
+      setHits(matches);
+      setOpen(matches.length > 0);
+    } else {
+      setOpen(false);
+    }
+  }
+  function pick(s) { onChange(s); setOpen(false); }
+  function handleBlur() { setTimeout(function() { setOpen(false); }, 180); }
+ function handleFocus() { if (value.length > 1 && hits.length > 0) setOpen(true); }
+  return (
+    <div className="relative">
+ <input type="text" value={value} onChange={function(e) { handleType(e.target.value); }}
+        onBlur={handleBlur} onFocus={handleFocus}
+        placeholder="Start typing — suggestions appear"
+        className={CN14} />
+      {open && hits.length > 0 && (
+ <div className="absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-xl overflow-hidden z-50 shadow-2xl">
+          {hits.map(function(s, i) {
+            return (
+              <button key={i} type="button" onClick={function() { pick(s); }}
+ className="w-full text-left px-4 py-2.5 text-slate-300 text-xs font-sans hover:bg-slate-700 border-b border-slate-700/40 last:border-0 flex items-start gap-2">
+                <span className="shrink-0 text-slate-500 mt-0.5">📍</span>
+                <span>{s}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+function BottomNav(props) {
+  var active = props.active;
+  var go = props.go;
+  var items = [
+    {label:"Trips", s:"dashboard", icon:"🗺️"},
+    {label:"Timeline", s:"timeline", icon:"📅"},
+    {label:"Add", s:"addEvent", icon:"➕", primary:true},
+    {label:"Glance", s:"glance", icon:"📋"},
+    {label:"Settings", s:"settings", icon:"⚙️"}
+  ];
+  return (
+    <div className="bg-slate-900 border-t border-slate-800 px-2 pb-2 pt-1">
+      <div className="flex justify-around max-w-lg mx-auto">
+        {items.map(function(it) {
+          var cls = it.primary
+ ? "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans bg-orange-500 text-white -mt-4 shadow-lg"
+            : active === it.s
+ ? "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans text-orange-400"
+ : "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans text-slate-500 hover:text-slate-300";
+          return (
+ <button key={it.s} onClick={function() { go(it.s); }} className={cls}>
+              <span className="text-xl">{it.icon}</span>
+              <span className="text-xs">{it.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+function PhotoEntry(props) {
+  var tripId = props.tripId;
+  var currentPhoto = props.currentPhoto;
+  var setTrips = props.setTrips;
+  function handleFile(e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      var dataUrl = evt.target.result;
+      setTrips(function(prev) {
+        return prev.map(function(t) {
+          if (t.id !== tripId) return t;
+          return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, days:t.days, tripDays:t.tripDays, budget:t.budget, spent:t.spent, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:dataUrl };
+        });
+      });
+    };
+    reader.readAsDataURL(f);
+  }
+  return (
+    <label style={{cursor:"pointer",display:"inline-block"}}>
+      <span style={{background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"9999px",padding:"6px 12px",color:"white",fontSize:"12px",fontFamily:"sans-serif",display:"inline-block"}}>
+        📷 {currentPhoto ? "Change Photo" : "Add Photo"}
+      </span>
+      <input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}} />
+    </label>
+  );
+}
+function DocEntry(props) {
+  var docs = props.docs;
+  var setDocs = props.setDocs;
+  function handleFiles(e) {
+    if (!e.target.files) return;
+    var names = [];
+    for (var i = 0; i < e.target.files.length; i++) {
+      names.push(e.target.files[i].name);
+    }
+    setDocs(docs.concat(names));
+  }
+  function removeDoc(idx) {
+    setDocs(docs.filter(function(_, j) { return j !== idx; }));
+  }
+  return (
+    <div className="space-y-2">
+      <label className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-600/60 text-slate-400 text-sm font-sans hover:border-orange-500/50 hover:text-orange-400 cursor-pointer">
+        📎 Attach Document or Photo
+        <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,image/*" onChange={handleFiles} style={{display:"none"}} />
+      </label>
+      {docs.length > 0 && (
+        <div className="space-y-1.5">
+          {docs.map(function(d, i) {
+            var idx = i;
+            return (
+              <div key={idx} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
+                <div className={CN7}><span>📄</span><span className={CN20}>{d}</span></div>
+                <button onClick={function() { removeDoc(idx); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+function SmartDatePicker(props) {
+  var value = props.value;   // "YYYY-MM-DD" internally
+  var onChange = props.onChange;
+  var placeholder = props.placeholder || "Select date";
+  var className = props.className || "";
+  function displayVal() {
+    if (!value) return placeholder;
+    var parts = value.split("-");
+    if (parts.length !== 3) return placeholder;
+ var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var m = parseInt(parts[1], 10) - 1;
+    return parts[2] + " " + (months[m] || parts[1]) + " " + parts[0];
+  }
+  return (
+    <div style={{position:"relative", display:"block"}}>
+      <div style={{
+        background:"rgba(30,41,59,0.8)",
+        border:"1px solid rgba(71,85,105,0.6)",
+        borderRadius:"12px",
+        padding:"12px 16px",
+        color: value ? "white" : "rgba(100,116,139,1)",
+        fontFamily:"sans-serif",
+        fontSize:"14px",
+        pointerEvents:"none",
+        userSelect:"none"
+      }}>
+        {displayVal()}
+      </div>
+      <input
+        type="date"
+        value={value}
+        onChange={function(e) { onChange(e.target.value); }}
+        style={{
+          position:"absolute",
+          top:0, left:0,
+          width:"100%",
+          height:"100%",
+          opacity:0.01,
+          cursor:"pointer",
+          zIndex:2
+        }}
+      />
+    </div>
+  );
+}
+function AddEditScreen(props) {
+  var go = props.go;
+  var tripName = props.tripName;
+  var dayIndex = props.dayIndex;
+  var days = props.days;
+  var onSave = props.onSave;
+  var ev = props.editEv;
+  var isEdit = ev !== null && ev !== undefined;
+  var initCur = CURS[0];
+  if (isEdit) {
+    for (var ci = 0; ci < CURS.length; ci++) {
+      if (CURS[ci].code === ev.cur) { initCur = CURS[ci]; break; }
+    }
+  }
+  var stSelType = useState(isEdit ? ev.type : null);
+  var selType = stSelType[0]; var setSelType = stSelType[1];
+  var stShowTypes = useState(false);
+  var showTypes = stShowTypes[0]; var setShowTypes = stShowTypes[1];
+  var stShowCur = useState(false);
+  var showCur = stShowCur[0]; var setShowCur = stShowCur[1];
+  var stFlight = useState(isEdit && ev.type === "Flight" ? (ev.ref || "") : "");
+  var flightNum = stFlight[0]; var setFlightNum = stFlight[1];
+  var stLk = useState("idle");
+  var lkState = stLk[0]; var setLkState = stLk[1];
+  var stLkRes = useState(null);
+  var lkRes = stLkRes[0]; var setLkRes = stLkRes[1];
+  var selDay = props.selDay !== undefined ? props.selDay : dayIndex;
+  var setSelDay = props.setSelDay;
+  var stSaved = useState(false);
+  var saved = stSaved[0]; var setSaved = stSaved[1];
+  var stDate = useState(isEdit ? (ev.date || "") : "");
+  var stDep = useState(isEdit ? (ev.dep || "") : "");
+  var stArr    = useState(isEdit ? (ev.arr    || "") : "");
+  var stArrDate= useState(isEdit ? (ev.arrDate|| "") : "");
+  var stDur = useState(isEdit ? (ev.dur || "") : "");
+  var stTitle = useState(isEdit ? (ev.title || "") : "");
+  var stAddr = useState(isEdit ? (ev.addr || "") : "");
+  var stCName = useState(isEdit && ev.contact ? (ev.contact.name || "") : "");
+  var stCPhone = useState(isEdit && ev.contact ? (ev.contact.phone || "") : "");
+  var stWA = useState(isEdit && ev.contact ? (ev.contact.wa || false) : false);
+  var stRef = useState(isEdit ? (ev.ref || "") : "");
+  var stCost = useState(isEdit ? String(ev.cost || "") : "");
+  var stCur = useState(initCur);
+  var stPlane = useState(isEdit ? (ev.aircraft || "") : "");
+  var stNote = useState(isEdit ? (ev.note || "") : "");
+  var stDocs = useState(isEdit ? (ev.docs || []) : []);
+  var date = stDate[0]; var setDate = stDate[1];
+  var dep = stDep[0]; var setDep = stDep[1];
+  var arr     = stArr[0];     var setArr     = stArr[1];
+  var arrDate = stArrDate[0]; var setArrDate = stArrDate[1];
+  var dur = stDur[0]; var setDur = stDur[1];
+  var title = stTitle[0]; var setTitle = stTitle[1];
+  var addr = stAddr[0]; var setAddr = stAddr[1];
+  var cName = stCName[0]; var setCName = stCName[1];
+  var cPhone = stCPhone[0]; var setCPhone = stCPhone[1];
+  var wa = stWA[0]; var setWA = stWA[1];
+  var bookRef = stRef[0]; var setRef = stRef[1];
+  var cost = stCost[0]; var setCost = stCost[1];
+  var cur = stCur[0]; var setCur = stCur[1];
+  var plane = stPlane[0]; var setPlane = stPlane[1];
+  var note = stNote[0]; var setNote = stNote[1];
+  var docs = stDocs[0]; var setDocs = stDocs[1];
+  var isFlight = selType === "Flight";
+  var isHotel  = selType === "Hotel";
+  var isTrain  = selType === "Train";
+ var hasTimes    = selType === "Flight" || selType === "Train" || selType === "Ferry" || selType === "Bus" || selType === "Taxi" || selType === "Car Rental";
+ var hasArrDate  = selType === "Ferry" || selType === "Car Rental" || selType === "Train" || selType === "Bus";
+  var typeObj = null;
+  for (var ti = 0; ti < ETYPES.length; ti++) {
+    if (ETYPES[ti].t === selType) { typeObj = ETYPES[ti]; break; }
+  }
+  function doLookup() {
+    var raw = flightNum.trim().toUpperCase();
+    var key = raw.split(" ").join("").split("\t").join("");
+    if (!key) return;
+    setLkState("loading");
+    setTimeout(function() {
+      var r = FLIGHTS[key];
+      if (r) {
+        setLkRes(r);
+        setLkState("found");
+      } else {
+        var found = null;
+        var fkeys = Object.keys(FLIGHTS);
+        for (var ki = 0; ki < fkeys.length; ki++) {
+          var fk = fkeys[ki];
+          if (fk.indexOf(key) !== -1 || key.indexOf(fk) !== -1) {
+            found = FLIGHTS[fk];
+            break;
+          }
+        }
+        if (found) { setLkRes(found); setLkState("found"); }
+        else setLkState("notfound");
+      }
+    }, 500);
+  }
+  function applyLookup() {
+    if (!lkRes) return;
+    setDep(lkRes.dep);
+    setArr(lkRes.arr);
+    setDur(lkRes.dur);
+    setPlane(lkRes.plane);
+    setTitle(lkRes.dc + " to " + lkRes.aCity);
+    setAddr(lkRes.dCity + " Airport, Terminal " + lkRes.dTerm);
+    setRef(flightNum.trim().toUpperCase());
+    setLkState("applied");
+  }
+  function doSave() {
+    if (!selType || !title) return;
+    var event = {
+      id: isEdit ? ev.id : Date.now(),
+      date: date,
+      dep: dep || "TBD",
+      arr: arr || "",
+      arrDate: arrDate || "",
+      dur: dur || "",
+      icon: typeObj ? typeObj.i : "📌",
+      type: selType,
+      title: title,
+      addr: addr || "",
+ contact: cPhone ? { name: cName || "Contact", phone: cPhone, wa: wa } : null,
+      ref: bookRef || null,
+      cost: parseFloat(cost) || 0,
+      cur: cur.code,
+      aircraft: plane || null,
+      note: note || "",
+      docs: docs
+    };
+    onSave(selDay, event, isEdit);
+    setSaved(true);
+    setTimeout(function() { setSaved(false); go("timeline", selDay); }, 1100);
+  }
+  var inp = CN14;
+  var lbl = CN15;
+  var saveDisabled = !selType || !title;
+  var saveCls = saved
+ ? "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-emerald-500 text-white"
+    : saveDisabled
+ ? "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-slate-700 text-slate-500 cursor-not-allowed"
+ : "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-orange-500 hover:bg-orange-400 text-white";
+  return (
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+ <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 px-5 pb-4 border-b border-slate-800/60">
+        <div className={CN8}>
+ <button onClick={function() { go("timeline"); }} className="shrink-0 bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm px-3 py-1.5 rounded-xl font-sans">Back</button>
+          <div className="flex-1 min-w-0">
+            <div className={CN12}>{tripName}</div>
+            <h1 className={CN13}>{isEdit ? "Edit Event" : "Add Event"}</h1>
+          </div>
+          {selType && typeObj && (
+ <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border font-sans shrink-0 " + (TC[selType] || "")}>
+              {typeObj.i} {selType}
+            </span>
+          )}
+        </div>
+        {isEdit && (
+ <div className="mt-2 bg-orange-500/10 border border-orange-500/20 rounded-xl px-3 py-2">
+ <p className="text-orange-300 text-xs font-sans">Editing <strong>{ev.title}</strong> — only change what you need</p>
+          </div>
+        )}
+      </div>
+      <div className="px-4 pb-6 pt-4 space-y-4">
+        <div className={CN2}>
+          <div className={lbl}>Add to Day</div>
+          <div className="flex gap-2 flex-wrap">
+            {days.map(function(d, i) {
+              var isSelected = selDay === i;
+              var di = i;
+              return (
+                <button key={di} type="button"
+                  onClick={function() { setSelDay(di); if (days[di] && days[di].date) setDate(days[di].date); }}
+                  style={{
+                    padding:"8px 12px", borderRadius:"12px", fontSize:"12px",
+ fontFamily:"sans-serif", fontWeight:"600", border:"2px solid",
+                    cursor:"pointer",
+ background: isSelected ? "rgb(249,115,22)" : "rgba(30,41,59,0.8)",
+                    color: isSelected ? "white" : "rgb(148,163,184)",
+ borderColor: isSelected ? "rgb(234,88,12)" : "rgba(71,85,105,0.5)"
+                  }}>
+                  <div>{d.label}</div>
+ <div style={{opacity:0.7,fontWeight:"normal",fontSize:"11px"}}>{fmtShort(d.date)}</div>
+                </button>
+              );
+            })}
+          </div>
+ {days[selDay] && <p style={{marginTop:"8px",fontSize:"12px",fontFamily:"sans-serif",color:"rgb(249,115,22)"}}>Adding to: {days[selDay].label} — {fmtFull(days[selDay].date)}</p>}
+        </div>
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden">
+ <button onClick={function() { setShowTypes(!showTypes); }} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-800/30">
+            <div className={CN8}>
+              <span className={CN16}>🎯</span>
+              <span className={CN4}>Event Type</span>
+ {!selType && <span className="text-orange-400 text-xs font-sans ml-1">required</span>}
+            </div>
+            <div className={CN7}>
+              {selType && typeObj && <span>{typeObj.i}</span>}
+              <span className={CN6}>{showTypes ? "Hide" : "Select"}</span>
+            </div>
+          </button>
+          {showTypes && (
+            <div className="border-t border-slate-800 p-3">
+              <div className="grid grid-cols-4 gap-2">
+                {ETYPES.map(function(et) {
+                  var cls = selType === et.t
+ ? "flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-sans font-semibold " + (TC[et.t] || "border-orange-500 bg-orange-500/15 text-orange-300")
+ : "flex flex-col items-center gap-1 py-2.5 rounded-xl border text-xs font-sans font-semibold border-slate-700/50 bg-slate-800/40 text-slate-400 hover:border-slate-600 hover:text-white";
+                  return (
+ <button key={et.t} onClick={function() { setSelType(et.t); setShowTypes(false); }} className={cls}>
+                      <span className="text-xl">{et.i}</span>
+                      <span>{et.t}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {selType && !showTypes && (
+            <div className="border-t border-slate-800/40 px-4 py-2">
+ <button onClick={function() { setShowTypes(true); }} className="text-xs text-orange-400 font-sans">Change type</button>
+            </div>
+          )}
+        </div>
+        {isFlight && (
+ <div className="rounded-2xl border border-blue-500/25 bg-blue-500/5 overflow-hidden">
+            <div className={CN26}>
+              <span>🔍</span>
+ <span className="text-blue-300 font-semibold font-sans text-sm">Flight Lookup</span>
+ <span className="text-blue-400/60 text-xs font-sans ml-auto">Auto-fills times and aircraft</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="flex gap-2">
+                <input type="text" placeholder="e.g. QF7821" value={flightNum}
+ onChange={function(e) { setFlightNum(e.target.value.toUpperCase()); setLkState("idle"); setLkRes(null); }}
+                  className={inp + " flex-1 font-mono tracking-widest"} />
+ <button onClick={doLookup} disabled={!flightNum.trim() || lkState === "loading"}
+ className={"px-4 py-3 rounded-xl text-sm font-bold font-sans " + (lkState === "loading" ? "bg-slate-700 text-slate-400" : "bg-blue-500 hover:bg-blue-400 text-white")}>
+                  {lkState === "loading" ? "..." : "Look Up"}
+                </button>
+              </div>
+              <div className="flex gap-1.5 flex-wrap items-center">
+                <span className="text-slate-600 text-xs font-sans">Try:</span>
+ {["QF7821","EK304","EY454","QR900","JQ15","UA838","DL41","AA292"].map(function(fn) {
+                  var fkey = fn;
+                  return (
+ <button key={fkey} onClick={function() { setFlightNum(fkey); setLkState("idle"); setLkRes(null); }}
+ className="text-xs text-blue-400/80 font-mono hover:text-blue-300 border border-blue-500/25 px-2 py-0.5 rounded-lg">
+                      {fkey}
+                    </button>
+                  );
+                })}
+              </div>
+              {lkState === "notfound" && (
+ <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-300 text-sm font-sans">Flight not found — fill in details manually below</div>
+              )}
+              {lkState === "found" && lkRes && (
+ <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 space-y-3">
+                  <div className={CN9}>
+                    <div>
+                      <p className={CN25}>{flightNum} — {lkRes.al}</p>
+ <p className="text-blue-300 text-xs font-sans">{lkRes.plane}</p>
+                    </div>
+ <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-sans">Found</span>
+                  </div>
+ <div className="bg-slate-800/60 rounded-xl p-3 flex items-center">
+                    <div className="flex-1 text-center">
+ <p className="text-white font-bold font-mono text-2xl">{lkRes.dc}</p>
+ <p className="text-blue-300 font-mono font-bold text-lg">{lkRes.dep}</p>
+                      <p className={CN5}>{lkRes.dCity}</p>
+                    </div>
+                    <div className="flex-shrink-0 text-center px-3">
+                      <p className="text-2xl">✈️</p>
+ <p className="text-blue-400 text-xs font-sans font-semibold">{lkRes.dur}</p>
+                    </div>
+                    <div className="flex-1 text-center">
+ <p className="text-white font-bold font-mono text-2xl">{lkRes.ac}</p>
+ <p className="text-blue-300 font-mono font-bold text-lg">{lkRes.arr}</p>
+                      <p className={CN5}>{lkRes.aCity}</p>
+                    </div>
+                  </div>
+ <button onClick={applyLookup} className="w-full py-3 rounded-2xl bg-blue-500 hover:bg-blue-400 text-white font-bold font-sans">Apply to Event</button>
+                </div>
+              )}
+              {lkState === "applied" && (
+ <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 text-emerald-300 text-sm font-sans font-semibold">Applied — review fields below</div>
+              )}
+            </div>
+          </div>
+        )}
+        <div className={CN1}>
+ <div className={CN7}><span className={CN16}>🕐</span><span className={CN4}>Date and Time</span></div>
+          {isHotel ? (
+            <div className="space-y-3">
+              <div className="flex gap-3">
+ <div className="flex-[2]"><label className={lbl}>Check-in Date</label><input type="date" value={date} onChange={function(e) { setDate(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-1"><label className={lbl}>Check-in Time</label><input type="time" value={dep} onChange={function(e) { setDep(e.target.value); }} className={inp} /></div>
+              </div>
+              <div className="flex gap-3">
+ <div className="flex-[2]"><label className={lbl}>Check-out Date</label><input type="date" value={arr} onChange={function(e) { setArr(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-1"><label className={lbl}>Check-out Time</label><input type="time" value={dur} onChange={function(e) { setDur(e.target.value); }} className={inp} /></div>
+              </div>
+              {date && arr && (function() {
+                var d1 = new Date(date + "T12:00:00");
+                var d2 = new Date(arr + "T12:00:00");
+                var nights = Math.round((d2 - d1) / 86400000);
+                return nights > 0 ? (
+ <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <span className="text-purple-400">🌙</span>
+ <span className="text-purple-300 text-sm font-sans font-semibold">{nights} night{nights !== 1 ? "s" : ""}</span>
+ <span className="text-slate-400 text-xs font-sans ml-1">{fmtShort(date)} — {fmtShort(arr)}</span>
+                  </div>
+                ) : null;
+              })()}
+ {date && <div className={CN17}><span className={CN16}>📅</span><span className={CN18}>Check-in: {fmtFull(date)}{dep ? " at " + dep : ""}{arr ? " — Check-out: " + fmtFull(arr) : ""}{dur ? " at " + dur : ""}</span></div>}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex gap-3">
+ <div className="flex-[2]"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Date" : hasArrDate ? "Departure Date" : "Date"}</label><input type="date" value={date} onChange={function(e) { var v=e.target.value; setDate(v); if (hasTimes && dep && arr) setDur(calcDuration(v, dep, arrDate||v, arr)); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-1"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Time" : hasTimes ? "Departs" : "Time"}</label><input type="time" value={dep} onChange={function(e) { var v = e.target.value; setDep(v); if (hasTimes && arr) setDur(calcDuration(date, v, arrDate||date, arr)); }} className={inp} /></div>
+              </div>
+              {hasArrDate && (
+                <div className="flex gap-3">
+ <div className="flex-[2]"><label className={lbl}>{selType === "Car Rental" ? "Return Date" : "Arrival Date"}</label><input type="date" value={arrDate} onChange={function(e) { var v=e.target.value; setArrDate(v); if (hasTimes && dep && arr) setDur(calcDuration(date, dep, v, arr)); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-1"><label className={lbl}>{selType === "Car Rental" ? "Return Time" : "Arrives"}</label><input type="time" value={arr} onChange={function(e) { var v = e.target.value; setArr(v); if (hasTimes && dep) setDur(calcDuration(date, dep, arrDate||date, v)); }} className={inp} /></div>
+                </div>
+              )}
+              {!hasArrDate && hasTimes && (
+                <div className="flex gap-3">
+ <div className="flex-1"><label className={lbl}>Arrives</label><input type="time" value={arr} onChange={function(e) { var v = e.target.value; setArr(v); if (hasTimes && dep) setDur(calcDuration(date, dep, arrDate||date, v)); }} className={inp} /></div>
+ <div className="flex-1"><label className={lbl}>Duration {dep && arr ? <span className="text-emerald-400 text-xs normal-case">auto</span> : ""}</label><input type="text" placeholder="e.g. 11h 45m" value={dur} onChange={function(e) { setDur(e.target.value); }} className={inp} /></div>
+                </div>
+              )}
+              {hasArrDate && (
+                <div>
+ <label className={lbl}>Duration {dep && arr && date ? <span className="text-emerald-400 text-xs normal-case">auto</span> : ""}</label>
+ <input type="text" placeholder="e.g. 3d 4h 30m" value={dur} onChange={function(e) { setDur(e.target.value); }} className={inp} />
+                </div>
+              )}
+ {date && <div className={CN17}><span className={CN16}>📅</span><span className={CN18}>{hasTimes ? "Dep: " : ""}{fmtFull(date)}{dep ? " at " + dep : ""}{arrDate && hasArrDate ? " — Arr: " + fmtFull(arrDate) : ""}{arr && hasTimes ? " at " + arr : ""}{dur ? " (" + dur + ")" : ""}</span></div>}
+            </div>
+          )}
+        </div>
+        <div className={CN1}>
+ <div className={CN7}><span className={CN16}>📝</span><span className={CN4}>Event Details</span></div>
+          <div>
+ <label className={lbl}>Event Name <span className={CN16}>*</span></label>
+ <input type="text" placeholder={isFlight ? "e.g. Sydney to Tokyo Narita" : "e.g. Check-in Shinjuku Granbell Hotel"} value={title} onChange={function(e) { setTitle(e.target.value); }} className={inp} />
+          </div>
+ <div><label className={lbl}>Address</label><AddrField value={addr} onChange={setAddr} placeholder="Start typing — suggestions appear" /></div>
+ <div><label className={lbl}>Booking Reference</label><input type="text" placeholder="e.g. QF7821 or HB-990234" value={bookRef} onChange={function(e) { setRef(e.target.value); }} className={inp + " font-mono"} /></div>
+ {isFlight && <div><label className={lbl}>Aircraft Type</label><input type="text" placeholder="e.g. Boeing 787-9 Dreamliner" value={plane} onChange={function(e) { setPlane(e.target.value); }} className={inp} /></div>}
+        </div>
+        <div className={CN1}>
+ <div className={CN7}><span className={CN16}>📞</span><span className={CN4}>Contact</span></div>
+ <div><label className={lbl}>Name</label><input type="text" placeholder="e.g. Hotel Front Desk" value={cName} onChange={function(e) { setCName(e.target.value); }} className={inp} /></div>
+ <div><label className={lbl}>Phone</label><input type="tel" placeholder="e.g. +61 2 9691 3636" value={cPhone} onChange={function(e) { setCPhone(e.target.value); }} className={inp + " font-mono"} /></div>
+ <div className={"flex items-center justify-between rounded-xl px-4 py-3 border " + (wa ? "bg-green-500/10 border-green-500/30" : "bg-slate-800/40 border-slate-700/40")}>
+            <div className="flex items-center gap-2.5">
+              <span>💬</span>
+ <div><p className="text-white text-sm font-sans font-semibold">Available on WhatsApp</p><p className={CN6}>Adds a tap-to-chat button on the card</p></div>
+            </div>
+ <button onClick={function() { setWA(!wa); }} className={"w-11 h-6 rounded-full relative " + (wa ? "bg-green-500" : "bg-slate-700")}>
+ <div className={"absolute top-0.5 w-5 h-5 bg-white rounded-full shadow " + (wa ? "left-5" : "left-0.5")} />
+            </button>
+          </div>
+        </div>
+        <div className={CN1}>
+ <div className={CN7}><span className={CN16}>💰</span><span className={CN4}>Cost</span></div>
+          <div className="flex gap-3">
+            <div className="w-28 shrink-0">
+              <label className={lbl}>Currency</label>
+ <button onClick={function() { setShowCur(!showCur); }} className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-3 text-white font-sans text-sm flex items-center justify-between">
+ <span className="font-bold">{cur.code}</span><span className="text-slate-500 text-xs">v</span>
+              </button>
+            </div>
+            <div className="flex-1">
+              <label className={lbl}>Amount</label>
+              <div className="relative">
+ <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-sans text-sm font-bold">{cur.sym}</span>
+ <input type="number" placeholder="0.00" value={cost} onChange={function(e) { setCost(e.target.value); }} className={inp + " pl-8"} />
+              </div>
+            </div>
+          </div>
+          {showCur && (
+ <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+              {CURS.map(function(c) {
+ var cls = "w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-700/50 font-sans border-b border-slate-700/30 last:border-0 " + (cur.code === c.code ? {CN16} : "text-white");
+                return (
+ <button key={c.code} onClick={function() { setCur(c); setShowCur(false); }} className={cls}>
+                    <span className="font-semibold text-sm">{c.code}</span>
+                    <span className="text-slate-400">{c.sym}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {cost && cur.code !== "AUD" && (
+ <div className="text-slate-400 text-xs font-sans bg-slate-800/40 rounded-xl px-3 py-2">
+ Approx. A${Math.round(parseFloat(cost) * (AUD[cur.code] || 1)).toLocaleString()} AUD
+            </div>
+          )}
+        </div>
+        <div className={CN1}>
+ <div className={CN7}><span className={CN16}>📝</span><span className={CN4}>Notes</span></div>
+ <textarea rows={3} placeholder="Seat number, dress code, special instructions..." value={note} onChange={function(e) { setNote(e.target.value); }} className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/70 font-sans text-sm resize-none" />
+        </div>
+        <div className={CN1}>
+ <div className={CN7}><span className={CN16}>📎</span><span className={CN4}>Documents</span></div>
+          {docs.length > 0 && (
+            <div className="space-y-2">
+              {docs.map(function(d, i) {
+                return (
+ <div key={i} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
+ <div className={CN7}><span>📄</span><span className={CN20}>{d}</span></div>
+ <button onClick={function() { setDocs(docs.filter(function(_, j) { return j !== i; })); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <DocEntry docs={docs} setDocs={setDocs} />
+        </div>
+      </div>
+      <div className="bg-slate-950 border-t border-slate-800 px-4 pt-3 pb-6">
+        <div className="flex gap-3 max-w-lg mx-auto">
+ <button onClick={function() { go("timeline"); }} className="flex-1 py-3.5 rounded-2xl border border-slate-700 text-slate-400 hover:text-white font-sans font-semibold">Cancel</button>
+          <button onClick={doSave} disabled={saveDisabled} className={saveCls}>
+ {saved ? (isEdit ? "Saved!" : "Added!") : (isEdit ? "Save Changes" : "Save Event")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function TimelineScreen(props) {
+  var go = props.go;
+  var trip = props.trip;
+  var days = props.days;
+  var setDays = props.setDays;
+  var onEdit = props.onEdit;
+  var onAdd  = props.onAdd;
+  var activeDay = props.activeDay || 0;
+  var setActiveDay = props.setActiveDay;
+  var stExp = useState(null);
+  var expandedId = stExp[0]; var setExpandedId = stExp[1];
+  var stDel = useState(null);
+  var delConfirm = stDel[0]; var setDelConfirm = stDel[1];
+  var cur = days[activeDay];
+  var pct = Math.min(100, Math.round((trip.spent / trip.budget) * 100));
+  function doDelete(di, id) {
+    setDays(function(prev) {
+      return prev.map(function(d, i) {
+        if (i !== di) return d;
+ return { id: d.id, label: d.label, date: d.date, events: d.events.filter(function(e) { return e.id !== id; }) };
+      });
+    });
+    setDelConfirm(null);
+    setExpandedId(null);
+  }
+ var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
+  return (
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+      <div className="relative" style={{height:"200px"}}>
+        {trip.photo ? (
+          <img src={trip.photo} alt="" className="w-full h-full object-cover" />
+        ) : (
+ <div className={"w-full h-full bg-gradient-to-br " + trip.grad + " flex flex-col items-center justify-center gap-3"}
+ style={{backgroundImage:"radial-gradient(ellipse at 20% 40%, " + trip.accent + "44 0%, transparent 55%)"}}>
+ <div className="flex gap-2 text-5xl">{trip.flags.map(function(f, i) { return <span key={i}>{f}</span>; })}</div>
+ <p className="text-white/25 text-xs font-sans uppercase tracking-widest">Go to Trips tab to add a cover photo</p>
+          </div>
+        )}
+ <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
+ <button onClick={function() { go("dashboard"); }} className="absolute top-12 left-4 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full border border-white/20 font-sans z-10">Back</button>
+        <div className="absolute bottom-4 left-5 right-5 z-10">
+ <div className="flex gap-1 mb-1">{trip.flags.map(function(f, i) { return <span key={i} className="text-xl">{f}</span>; })}</div>
+          <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
+ <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
+        </div>
+      </div>
+      <div className="bg-slate-900/95 px-5 py-3 border-b border-slate-800">
+        <div className="flex justify-between mb-1.5 font-sans text-sm">
+ <span className="text-white font-semibold">{fmtShort(trip.start)}<span className="text-white/30 text-xs mx-1.5">to</span>{fmtShort(trip.end)}</span>
+          <span className="text-slate-400 text-xs">{trip.tripDays} days</span>
+        </div>
+        <div className="flex justify-between mb-1.5 font-sans">
+ <div><span className="text-white font-bold">A${trip.spent.toLocaleString()}</span><span className="text-slate-500 text-xs ml-1">spent</span></div>
+ <div><span className="text-emerald-400 font-bold">A${(trip.budget - trip.spent).toLocaleString()}</span><span className="text-slate-500 text-xs ml-1">left</span></div>
+ <div><span className="text-slate-400">A${trip.budget.toLocaleString()}</span><span className="text-slate-500 text-xs ml-1">budget</span></div>
+        </div>
+        <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+ <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400" style={{width: pct + "%"}} />
+        </div>
+ <button onClick={function() { go("costs"); }} className="w-full text-xs text-orange-400/70 font-sans hover:text-orange-400 text-center pt-1">View full costs breakdown</button>
+      </div>
+ <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-slate-900/60 border-b border-slate-800/50">
+        {days.map(function(d, i) {
+          var cls = activeDay === i
+ ? "shrink-0 px-3 py-2 rounded-xl text-xs font-sans bg-orange-500 text-white shadow-lg"
+ : "shrink-0 px-3 py-2 rounded-xl text-xs font-sans bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700/50";
+          var idx = i;
+          return (
+ <button key={idx} onClick={function() { setActiveDay(idx); }} className={cls}>
+              <div className="font-bold">{d.label}</div>
+              <div className="opacity-70">{fmtShort(d.date)}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div className="px-4 pt-4 pb-28">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <span className={CN25}>{cur.label}</span>
+ <span className="text-slate-400 text-sm font-sans ml-2">{fmtFull(cur.date)}</span>
+          </div>
+ <button onClick={function() { onAdd(activeDay); }} className="text-xs text-orange-400 font-sans border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500/10">+ Add Event</button>
+        </div>
+        {cur.events.length === 0 && (
+          <div className="text-center py-16">
+            <div className="text-5xl mb-3">📅</div>
+ <p className="text-slate-400 font-sans">No events yet for {cur.label}</p>
+ <button onClick={function() { onAdd(activeDay); }} className="mt-4 bg-orange-500 text-white px-6 py-2.5 rounded-2xl text-sm font-semibold font-sans">+ Add First Event</button>
+          </div>
+        )}
+        <div className="relative">
+          {cur.events.length > 0 && (
+ <div className="absolute left-3.5 top-5 bottom-5 w-px bg-gradient-to-b from-orange-500/60 via-slate-600/30 to-transparent" />
+          )}
+          <div className="space-y-3">
+            {cur.events.map(function(ev, i) {
+              var isExp = expandedId === ev.id;
+              var isNext = activeDay === 0 && i === 0;
+              var sym = SYM[ev.cur] || ev.cur;
+              var tc = TC[ev.type] || TC.Other;
+              var isFl = ev.type === "Flight";
+              var cardCls = isNext
+ ? "rounded-2xl border overflow-hidden cursor-pointer border-orange-500/70 bg-gradient-to-br from-orange-950/50 via-slate-800/90 to-slate-900 shadow-lg"
+ : "rounded-2xl border overflow-hidden cursor-pointer border-slate-700/50 bg-slate-800/60 hover:border-slate-600";
+              return (
+                <div key={ev.id} className="flex gap-3 items-start">
+                  <div className="shrink-0 mt-4 z-10">
+ <div className={"w-7 h-7 rounded-full flex items-center justify-center text-xs " + (i === 0 ? "bg-orange-500 text-white ring-2 ring-orange-500/30" : "bg-slate-800 border-2 border-slate-600 text-slate-400")}>
+                      {i === 0 ? ">" : i + 1}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+ <div onClick={function() { setExpandedId(isExp ? null : ev.id); }} className={cardCls}>
+ {isNext && <div className="h-0.5 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />}
+                      <div className="p-4 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+ <span className="text-white font-bold text-sm font-sans flex-1">{fmtFull(ev.date)}{ev.dep && ev.dep !== "TBD" ? " at " + ev.dep : ""}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+ <CopyBtn text={fmtFull(ev.date) + (ev.dep && ev.dep !== "TBD" ? " at " + ev.dep : "")} />
+ {isNext && <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full font-sans">NEXT</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-start justify-between gap-2">
+ <p className="text-white font-semibold text-base flex-1">{ev.title}</p>
+                          <CopyBtn text={ev.title} />
+                        </div>
+ <span className={"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border font-sans " + tc}>{ev.icon} {ev.type}</span>
+ {ev.type === "Hotel" && ev.date && ev.arr && (function() {
+                          var d1 = new Date(ev.date + "T12:00:00");
+                          var d2 = new Date(ev.arr + "T12:00:00");
+                          var nights = Math.round((d2 - d1) / 86400000);
+ return nights > 0 ? <span className="ml-2 text-purple-300 text-xs font-sans bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-full">🌙 {nights} night{nights !== 1 ? "s" : ""}</span> : null;
+                        })()}
+ {(ev.type === "Flight" || ev.type === "Train" || ev.type === "Ferry" || ev.type === "Bus" || ev.type === "Taxi" || ev.type === "Car Rental") && (ev.arr || ev.dur) && (
+ <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center">
+                            <div className="flex-1 text-center">
+ <p className="text-white font-mono font-bold text-lg">{ev.dep}</p>
+                              <p className={CN5}>Departs</p>
+                            </div>
+                            <div className="flex-shrink-0 text-center px-2">
+ <p className="text-xl">{ev.type === "Train" ? "🚆" : ev.type === "Ferry" ? "⛴️" : ev.type === "Bus" ? "🚌" : ev.type === "Taxi" ? "🚖" : ev.type === "Car Rental" ? "🚗" : "✈️"}</p>
+ {ev.dur && <p className="text-blue-400 text-xs font-sans font-semibold">{ev.dur}</p>}
+                            </div>
+                            <div className="flex-1 text-center">
+ <p className="text-white font-mono font-bold text-lg">{ev.arr}</p>
+                              <p className={CN5}>Arrives</p>
+                            </div>
+                          </div>
+                        )}
+                        {ev.addr ? (
+                          <div className="flex items-start gap-2">
+                            <span className="shrink-0 mt-0.5">📍</span>
+ <a href={"https://maps.google.com/?q=" + encodeURIComponent(ev.addr)} target="_blank" rel="noreferrer" onClick={function(e) { e.stopPropagation(); }} className="text-slate-300 text-sm font-sans flex-1 underline decoration-dotted hover:text-orange-300">{ev.addr}</a>
+                            <CopyBtn text={ev.addr} />
+                          </div>
+                        ) : null}
+                        {ev.contact ? (
+                          <div className="flex items-start gap-2">
+                            <span>📞</span>
+                            <div className="flex-1 min-w-0">
+                              <p className={CN5}>{ev.contact.name}</p>
+ <div className="flex items-center gap-1 flex-wrap">
+ <a href={"tel:" + ev.contact.phone} onClick={function(e) { e.stopPropagation(); window.location.href = "tel:" + ev.contact.phone; }} className="text-emerald-400 font-mono text-sm font-semibold underline">{ev.contact.phone}</a>
+                                <CopyBtn text={ev.contact.phone} />
+ {ev.contact.wa && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-sans">WhatsApp</span>}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+ <div className={CN7}><span>📞</span><span className="text-slate-600 text-xs italic font-sans">No contact</span></div>
+                        )}
+                        {ev.ref ? (
+                          <div className={CN7}>
+                            <span>🎫</span>
+ <span className="font-mono text-xs bg-slate-700/80 border border-slate-600/50 px-2.5 py-1 rounded-lg text-slate-200 tracking-wider">{ev.ref}</span>
+                            <CopyBtn text={ev.ref} />
+                          </div>
+                        ) : (
+ <div className={CN7}><span>🎫</span><span className="text-slate-600 text-xs italic font-sans">No booking ref</span></div>
+                        )}
+                        {ev.aircraft && (
+                          <div className={CN7}>
+                            <span>🛩️</span>
+ <span className="text-blue-300 text-sm font-sans">{ev.aircraft}</span>
+                            <CopyBtn text={ev.aircraft} />
+                          </div>
+                        )}
+                        <div className={CN7}>
+                          <span>💰</span>
+                          {ev.cost > 0 ? (
+                            <div className="flex items-center flex-wrap gap-1">
+ <span className="text-emerald-400 font-bold font-sans">{sym}{ev.cost.toLocaleString()}</span>
+ <span className="text-slate-500 text-xs">{ev.cur}</span>
+ {ev.cur !== "AUD" && <span className="text-slate-500 text-xs">≈ A${toAUD(ev.cost, ev.cur).toLocaleString()}</span>}
+ <CopyBtn text={sym + ev.cost.toLocaleString() + " " + ev.cur} />
+                            </div>
+                          ) : (
+ <span className="text-slate-500 text-sm font-sans">Free</span>
+                          )}
+                        </div>
+                      </div>
+                      {isExp && (
+ <div className="border-t border-slate-700/50 bg-slate-900/50 px-4 py-3 space-y-3">
+                          {ev.note ? (
+                            <div className="flex gap-2">
+                              <span>📝</span>
+ <p className="text-slate-300 text-sm font-sans flex-1">{ev.note}</p>
+                              <CopyBtn text={ev.note} />
+                            </div>
+                          ) : null}
+                          {ev.docs && ev.docs.length > 0 && (
+                            <div className="space-y-1">
+                              {ev.docs.map(function(d, di) {
+                                return (
+ <div key={di} className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
+                                    <span>📄</span>
+                                    <span className={CN20}>{d}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+ <button onClick={function(e) { e.stopPropagation(); onEdit(activeDay, ev); }} className="flex-1 text-xs text-slate-300 border border-slate-600/60 rounded-xl py-2.5 hover:border-orange-500/50 hover:text-orange-400 font-sans">Edit</button>
+ <button onClick={function(e) { e.stopPropagation(); setDelConfirm({ di: activeDay, id: ev.id, title: ev.title }); }} className="flex-1 text-xs text-red-400/80 border border-red-500/30 rounded-xl py-2.5 hover:bg-red-500/10 hover:text-red-400 font-sans">Delete</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {delConfirm && (
+ <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-5">
+ <div className="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 p-6 space-y-4">
+            <div className="text-center">
+              <div className="text-4xl mb-3">🗑️</div>
+ <h2 className="text-white font-bold text-lg">Delete this event?</h2>
+ <p className="text-slate-300 text-sm font-sans mt-1 font-semibold">{delConfirm.title}</p>
+ <p className="text-slate-500 text-sm font-sans mt-1">This cannot be undone.</p>
+            </div>
+            <div className="flex gap-3">
+ <button onClick={function() { setDelConfirm(null); }} className="flex-1 py-3 rounded-2xl border border-slate-700 text-slate-400 hover:text-white font-sans font-semibold">Cancel</button>
+ <button onClick={function() { doDelete(delConfirm.di, delConfirm.id); }} className="flex-1 py-3 rounded-2xl bg-red-500 hover:bg-red-400 text-white font-semibold font-sans">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <BottomNav active="timeline" go={go} />
+    </div>
+  );
+}
+function DashboardScreen(props) {
+  var go = props.go;
+  var setActiveTripId = props.setActiveTripId;
+  var trips = props.trips;
+  var setTrips = props.setTrips;
+  var stFilter = useState("all");
+  var filter = stFilter[0]; var setFilter = stFilter[1];
+  var stNew = useState(false);
+  var showNew = stNew[0]; var setShowNew = stNew[1];
+  var stNT = useState({ name:"", dests:"", start:"", end:"", budget:"" });
+  var nt = stNT[0]; var setNT = stNT[1];
+  var stDelTrip = useState(null);
+  var delTrip = stDelTrip[0]; var setDelTrip = stDelTrip[1];
+ var filtered = filter === "all" ? trips : trips.filter(function(t) { return t.status === filter; });
+  function updateNT(key, val) {
+ var next = { name: nt.name, dests: nt.dests, start: nt.start, end: nt.end, budget: nt.budget };
+    next[key] = val;
+    setNT(next);
+  }
+  return (
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+ <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 pb-4 px-5">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+ <div className="flex items-center gap-2 mb-1"><img src="/logo.png" style={{height:"64px",width:"auto",borderRadius:"8px"}} alt="Mannie Travels" /></div>
+            <h1 className="text-3xl font-bold text-white">My Trips</h1>
+          </div>
+ <button onClick={function() { setShowNew(true); }} className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold font-sans shadow-lg shadow-orange-900/50">+ New Trip</button>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 font-sans">
+          {["all","upcoming","planning","completed"].map(function(f) {
+ var cls = filter === f ? "shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold capitalize bg-orange-500 text-white" : "shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold capitalize bg-slate-800 text-slate-400 hover:text-white border border-slate-700";
+ var lbl2 = f === "all" ? "All (" + trips.length + ")" : f.charAt(0).toUpperCase() + f.slice(1) + " (" + trips.filter(function(t) { return t.status === f; }).length + ")";
+ return <button key={f} onClick={function() { setFilter(f); }} className={cls}>{lbl2}</button>;
+          })}
+        </div>
+      </div>
+      <div className="px-4 space-y-5">
+        {filtered.map(function(trip) {
+          var st = SC[trip.status] || SC.upcoming;
+          var pct = Math.min(100, Math.round((trip.spent / trip.budget) * 100));
+          return (
+ <div key={trip.id} className="rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-xl">
+              <div className="relative" style={{height:"190px"}}>
+                {trip.photo ? (
+ <img src={trip.photo} alt={trip.name} className="w-full h-full object-cover" />
+                ) : (
+ <div className={"w-full h-full bg-gradient-to-br " + trip.grad + " flex flex-col items-center justify-center gap-2"}
+ style={{backgroundImage:"radial-gradient(ellipse at 20% 40%, " + trip.accent + "44 0%, transparent 55%)"}}>
+ <div className="flex gap-2 text-4xl">{trip.flags.map(function(f, i) { return <span key={i}>{f}</span>; })}</div>
+ <p className="text-white/25 text-xs font-sans uppercase tracking-widest">Tap to add cover photo</p>
+                  </div>
+                )}
+ <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+                <div className="absolute top-3 right-3 z-20">
+ <span className={"text-xs font-semibold px-3 py-1 rounded-full border backdrop-blur-sm font-sans " + st.color}>{st.label}</span>
+                </div>
+                <div className="absolute top-3 left-3 z-20">
+ <PhotoEntry tripId={trip.id} currentPhoto={trip.photo} setTrips={setTrips} trips={trips} />
+                </div>
+                <div className="absolute bottom-4 left-5 right-16 z-10">
+ <div className="flex gap-1 mb-1">{trip.flags.map(function(f, i) { return <span key={i} className="text-xl">{f}</span>; })}</div>
+                  <h2 className={CN13}>{trip.name}</h2>
+ <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
+                </div>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex justify-between font-sans">
+                  <div>
+ <div className="text-white/40 text-xs uppercase mb-0.5">Dates</div>
+                    <div className="flex items-center gap-1">
+ <span className="text-white text-sm font-semibold">{fmtShort(trip.start)}</span>
+                      <span className="text-white/30 text-xs">to</span>
+ <span className="text-white text-sm font-semibold">{fmtShort(trip.end)}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+ <div className="text-white/40 text-xs uppercase mb-0.5">Length</div>
+ <div className="text-white/80 text-sm font-semibold">{trip.tripDays} days</div>
+                  </div>
+                </div>
+                <div>
+ <div className="flex justify-between text-xs font-sans mb-1"><span className="text-white/40">Budget</span><span className="text-white/40">{pct}% used</span></div>
+ <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+ <div className="h-full rounded-full" style={{width: pct + "%", background: "linear-gradient(90deg," + trip.accent + "," + trip.accent + "99)"}} />
+                  </div>
+                  <div className="flex justify-between font-sans">
+                    <div>
+                      <div className="text-white/35 text-xs">Spent</div>
+ <div className="flex items-center"><span className="text-white font-bold text-sm">A${trip.spent.toLocaleString()}</span><CopyBtn text={"A$" + trip.spent.toLocaleString()} /></div>
+                    </div>
+                    {trip.status !== "completed" && (
+                      <div className="text-center">
+                        <div className="text-white/35 text-xs">Left</div>
+ <div className="font-bold text-sm" style={{color: trip.accent}}>A${(trip.budget - trip.spent).toLocaleString()}</div>
+                      </div>
+                    )}
+                    <div className="text-right">
+                      <div className="text-white/35 text-xs">Budget</div>
+ <div className="text-white/60 font-bold text-sm">A${trip.budget.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+ <button onClick={function() { setActiveTripId(trip.id); go("timeline"); }}
+ className="flex-1 py-3 rounded-2xl border border-white/15 text-white text-sm font-semibold font-sans hover:bg-white/10" style={{backgroundColor:"rgba(255,255,255,0.06)"}}>
+                    {trip.status === "completed" ? "View Archive" : "Open Trip"}
+                  </button>
+                  <button onClick={function() { setDelTrip(trip); }}
+ className="px-4 py-3 rounded-2xl border border-red-500/30 text-red-400 text-sm font-sans hover:bg-red-500/10">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {trips.length === 0 && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">✈️</div>
+            <h2 className="text-white text-xl font-bold mb-2">No trips yet</h2>
+ <p className="text-slate-400 font-sans text-sm mb-6">Tap + New Trip to plan your first adventure</p>
+ <button onClick={function() { setShowNew(true); }} className="bg-orange-500 hover:bg-orange-400 text-white px-8 py-3 rounded-2xl font-semibold font-sans shadow-lg shadow-orange-900/50">+ New Trip</button>
+          </div>
+        )}
+      </div>
+      {showNew && (
+ <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end">
+ <div className="w-full bg-slate-900 rounded-t-3xl border-t border-slate-700 p-6 space-y-4 max-h-screen overflow-y-auto">
+            <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-2" />
+            <h2 className={CN13}>New Trip</h2>
+            <div className="space-y-3 font-sans">
+              <div>
+ <label className="block text-xs text-slate-400 uppercase tracking-wider mb-1.5">Trip Name</label>
+ <input type="text" value={nt.name} onChange={function(e) { updateNT("name", e.target.value); }} placeholder="e.g. Japan Adventure 2026" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+              </div>
+              <div>
+ <label className="block text-xs text-slate-400 uppercase tracking-wider mb-1.5">Destinations</label>
+ <input type="text" value={nt.dests} onChange={function(e) { updateNT("dests", e.target.value); }} placeholder="e.g. Tokyo, Kyoto, Bangkok" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+ <label className="block text-xs text-slate-400 uppercase tracking-wider mb-1.5">Start Date</label>
+ <input type="date" value={nt.start} onChange={function(e) { updateNT("start", e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+                </div>
+                <div className="flex-1">
+ <label className="block text-xs text-slate-400 uppercase tracking-wider mb-1.5">End Date</label>
+ <input type="date" value={nt.end} onChange={function(e) { updateNT("end", e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+                </div>
+              </div>
+              <div>
+ <label className="block text-xs text-slate-400 uppercase tracking-wider mb-1.5">Budget (AUD)</label>
+ <input type="number" value={nt.budget} onChange={function(e) { updateNT("budget", e.target.value); }} placeholder="e.g. 5000" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500" />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+ <button onClick={function() { setShowNew(false); }} className="flex-1 py-3.5 rounded-2xl border border-slate-700 text-slate-400 font-sans font-semibold hover:text-white">Cancel</button>
+              <button onClick={function() {
+                if (!nt.name) return;
+ var destArr = nt.dests.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+                var dayCount = 7;
+                if (nt.start && nt.end) {
+ var ms = new Date(nt.end + "T12:00:00") - new Date(nt.start + "T12:00:00");
+                  dayCount = Math.max(1, Math.round(ms / 86400000) + 1);
+                }
+ var newT = { id: Date.now(), name: nt.name, dests: destArr, start: nt.start || "", end: nt.end || "", tripDays: dayCount, budget: parseInt(nt.budget) || 0, spent: 0, status: "planning", accent: "#f97316", flags: ["🌍"], grad: "from-slate-800 to-slate-700" };
+                props.addTrip(newT);
+                setShowNew(false);
+                setNT({ name:"", dests:"", start:"", end:"", budget:"" });
+ }} className="flex-1 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-400 text-white font-semibold font-sans shadow-lg shadow-orange-900/50">Create Trip</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {delTrip && (
+ <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-5">
+ <div className="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 p-6 space-y-4">
+            <div className="text-center">
+              <div className="text-4xl mb-3">🗑️</div>
+ <h2 className="text-white font-bold text-lg">Delete this trip?</h2>
+ <p className="text-slate-300 text-sm font-sans mt-1 font-semibold">{delTrip.name}</p>
+ <p className="text-slate-500 text-sm font-sans mt-1">All events will be permanently deleted.</p>
+            </div>
+            <div className="flex gap-3">
+ <button onClick={function() { setDelTrip(null); }} className="flex-1 py-3 rounded-2xl border border-slate-700 text-slate-400 hover:text-white font-sans font-semibold">Cancel</button>
+              <button onClick={function() {
+ setTrips(function(prev) { return prev.filter(function(t) { return t.id !== delTrip.id; }); });
+                setDelTrip(null);
+ }} className="flex-1 py-3 rounded-2xl bg-red-500 hover:bg-red-400 text-white font-semibold font-sans">Delete Trip</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <BottomNav active="dashboard" go={go} />
+    </div>
+  );
+}
+function GlanceScreen(props) {
+  var go = props.go;
+  var trip = props.trip;
+  var days = props.days;
+  var setActiveDay = props.setActiveDay;
+ var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
+  var stView = useState("full");
+  var view = stView[0]; var setView = stView[1];
+  var stWeek = useState(0);
+  var weekStart = stWeek[0]; var setWeek = stWeek[1];
+  var WEEK = 7;
+  var totalDays = days.length;
+  var totalWeeks = Math.ceil(totalDays / WEEK);
+  var visibleDays = view === "week"
+    ? days.slice(weekStart * WEEK, weekStart * WEEK + WEEK)
+    : days;
+  function buildText() {
+    var lines = [];
+    lines.push(trip.name.toUpperCase());
+    lines.push(trip.dests.join(", "));
+ if (trip.start) lines.push(fmtShort(trip.start) + " to " + fmtShort(trip.end));
+    lines.push("");
+    for (var di = 0; di < days.length; di++) {
+      var day = days[di];
+ lines.push("--- " + day.label.toUpperCase() + " | " + fmtFull(day.date) + " ---");
+      if (day.events.length === 0) {
+        lines.push("  No events");
+      } else {
+        for (var ei = 0; ei < day.events.length; ei++) {
+          var ev = day.events[ei];
+          var sym = SYM[ev.cur] || ev.cur;
+          var line = "  " + ev.icon + " " + ev.title;
+          if (ev.dep && ev.dep !== "TBD") line += "  " + ev.dep;
+          if (ev.arr && ev.type === "Flight") line += " - " + ev.arr;
+          if (ev.dur) line += " (" + ev.dur + ")";
+          lines.push(line);
+          if (ev.addr) lines.push("     " + ev.addr);
+ if (ev.contact) lines.push("     " + ev.contact.name + "  " + ev.contact.phone);
+          if (ev.ref) lines.push("     Ref: " + ev.ref);
+          if (ev.aircraft) lines.push("     " + ev.aircraft);
+ if (ev.cost > 0) lines.push("     Cost: " + sym + ev.cost.toLocaleString() + " " + ev.cur);
+          if (ev.note) lines.push("     Note: " + ev.note);
+        }
+      }
+      lines.push("");
+    }
+    var total = days.reduce(function(s,d) {
+ return s + d.events.reduce(function(s2,ev) { return s2 + toAUD(ev.cost, ev.cur); }, 0);
+    }, 0);
+ if (!hideCosts) lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
+    return lines.join("\n");
+  }
+  var stHideCosts = useState(false);
+  var hideCosts = stHideCosts[0]; var setHideCosts = stHideCosts[1];
+  var stCopied = useState(false);
+  var copied = stCopied[0]; var setCopied = stCopied[1];
+  var stShowText = useState(false);
+  var showText = stShowText[0]; var setShowText = stShowText[1];
+  function handleCopy() {
+    var text = buildText();
+    try {
+      navigator.clipboard.writeText(text).then(function() {
+        setCopied(true);
+        setTimeout(function() { setCopied(false); }, 2500);
+      });
+    } catch(e) {
+      setShowText(true);
+    }
+  }
+  return (
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+      <div className={CN10}>
+        <div className="flex items-center justify-between mb-3">
+          <div className={CN8}>
+ <button onClick={function() { go("timeline"); }} className={CN11}>Back</button>
+            <div>
+              <div className={CN12}>{trip.name}</div>
+              <h1 className={CN13}>Itinerary</h1>
+            </div>
+          </div>
+ <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+            <button onClick={function() { setHideCosts(!hideCosts); }}
+              style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid",background:hideCosts?"rgba(245,158,11,0.2)":"rgba(30,41,59,0.8)",borderColor:hideCosts?"rgba(245,158,11,0.4)":"rgba(71,85,105,0.7)",color:hideCosts?"rgb(252,211,77)":"rgb(148,163,184)"}}>
+              {hideCosts ? "💰 Costs Hidden" : "💰 Hide Costs"}
+            </button>
+  <button onClick={handleCopy} className={"text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border " + (copied ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white")}>
+              {copied ? "✓ Copied!" : "📋 Copy"}
+            </button>
+            <button onClick={function() {
+              var text = buildText();
+              var subject = encodeURIComponent(trip.name + " Itinerary");
+              var body = encodeURIComponent(text);
+              window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+            }} className="text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border bg-slate-800 border-slate-700 text-slate-300 hover:text-white">
+              ✉️ Email
+            </button>
+            <button onClick={function() {
+              var text = buildText();
+              var win = window.open("", "_blank");
+              if (win) {
+                win.document.write("<html><head><title>" + trip.name + " Itinerary</title><style>body{font-family:Georgia,serif;padding:32px;max-width:700px;margin:0 auto;color:#111;line-height:1.6}pre{white-space:pre-wrap;font-family:Georgia,serif;font-size:14px}</style></head><body><pre>" + text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") + "</pre></body></html>");
+                win.document.close();
+                setTimeout(function() { win.print(); }, 400);
+              }
+            }} className="text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border bg-slate-800 border-slate-700 text-slate-300 hover:text-white">
+              🖨️ Print
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-2">
+ <button onClick={function() { setView("week"); }} className={"flex-1 py-2 rounded-xl text-xs font-semibold font-sans border " + (view === "week" ? "bg-orange-500 text-white border-orange-600" : "bg-slate-800 text-slate-400 border-slate-700")}>
+            Weekly View
+          </button>
+ <button onClick={function() { setView("full"); }} className={"flex-1 py-2 rounded-xl text-xs font-semibold font-sans border " + (view === "full" ? "bg-orange-500 text-white border-orange-600" : "bg-slate-800 text-slate-400 border-slate-700")}>
+            Full Trip
+          </button>
+        </div>
+        {showText && (
+          <div className="mt-3">
+ <p className="text-slate-400 text-xs font-sans mb-1">Select all text below and copy:</p>
+            <textarea readOnly value={buildText()} rows={8}
+ className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-300 text-xs font-mono resize-none focus:outline-none"
+              onFocus={function(e) { e.target.select(); }}
+            />
+          </div>
+        )}
+        {view === "week" && totalWeeks > 1 && (
+          <div className="flex items-center justify-between mt-2">
+ <button onClick={function() { setWeek(Math.max(0, weekStart - 1)); }} disabled={weekStart === 0} className="text-slate-400 text-sm px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 disabled:opacity-30 font-sans">Prev</button>
+            <span className={CN5}>Week {weekStart + 1} of {totalWeeks}</span>
+ <button onClick={function() { setWeek(Math.min(totalWeeks - 1, weekStart + 1)); }} disabled={weekStart === totalWeeks - 1} className="text-slate-400 text-sm px-3 py-1 rounded-lg bg-slate-800 border border-slate-700 disabled:opacity-30 font-sans">Next</button>
+          </div>
+        )}
+      </div>
+      <div className="px-4 py-4 space-y-3">
+        {visibleDays.length === 0 && (
+          <div className="text-center py-20">
+            <div className="text-5xl mb-3">📋</div>
+ <p className="text-slate-400 font-sans">No days yet. Add events on the Timeline tab.</p>
+          </div>
+        )}
+        {visibleDays.map(function(day) { var di = days.indexOf(day);
+          var hasEvents = day.events.length > 0;
+          return (
+ <div key={day.id} className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden">
+              <button
+                onClick={function() { setActiveDay(di); go("timeline"); }}
+ className="w-full flex items-center justify-between px-4 py-3 bg-slate-800/40 border-b border-slate-800/60 hover:bg-slate-700/40 transition-colors text-left">
+                <div>
+                  <span className={CN25}>{day.label}</span>
+ <span className="text-slate-400 text-sm font-sans ml-2">{fmtFull(day.date)}</span>
+                </div>
+                <div className={CN7}>
+ <span className={CN6}>{day.events.length} event{day.events.length !== 1 ? "s" : ""}</span>
+ <span className="text-orange-400 text-xs font-sans">Open →</span>
+                </div>
+              </button>
+              {!hasEvents ? (
+ <div className="px-4 py-3 text-slate-600 text-sm font-sans italic">No events</div>
+              ) : (
+                <div className="divide-y divide-slate-800/40">
+                  {day.events.map(function(ev) {
+                    var sym = SYM[ev.cur] || ev.cur;
+                    var isFl = ev.type === "Flight";
+                    return (
+ <div key={ev.id} className="px-4 py-3 flex items-start gap-3">
+ <span className="text-xl shrink-0 mt-0.5">{ev.icon}</span>
+                        <div className="flex-1 min-w-0 space-y-0.5">
+ <div className="flex items-start justify-between gap-2">
+ <p className="text-white font-semibold font-sans text-sm leading-snug">{ev.title}</p>
+ {ev.cost > 0 && <span className="text-emerald-400 font-sans text-xs font-bold shrink-0">{sym}{ev.cost.toLocaleString()}</span>}
+                          </div>
+                          {ev.dep && ev.dep !== "TBD" && (
+                            <div className="flex items-center gap-2 flex-wrap">
+ <span className="text-orange-300 text-xs font-sans font-semibold">{ev.dep}</span>
+ {isFl && ev.arr && <span className="text-slate-500 text-xs">to</span>}
+ {isFl && ev.arr && <span className="text-orange-300 text-xs font-sans font-semibold">{ev.arr}</span>}
+ {ev.dur && <span className={CN5}>({ev.dur})</span>}
+                            </div>
+                          )}
+ {ev.aircraft && <p className="text-blue-300 text-xs font-sans">🛩️ {ev.aircraft}</p>}
+                          {ev.addr ? (
+ <a href={"https://maps.google.com/?q=" + encodeURIComponent(ev.addr)} target="_blank" rel="noreferrer"
+ className="text-slate-400 text-xs font-sans block truncate hover:text-orange-300">📍 {ev.addr}</a>
+                          ) : null}
+                          {ev.contact && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={CN6}>{ev.contact.name}</span>
+ <a href={"tel:" + ev.contact.phone} className="text-emerald-400 text-xs font-mono">{ev.contact.phone}</a>
+                            </div>
+                          )}
+ {ev.ref && <p className="text-slate-500 text-xs font-mono">Ref: {ev.ref}</p>}
+ {ev.note && <p className="text-slate-500 text-xs font-sans italic">{ev.note}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {days.length > 0 && (
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 p-4 space-y-2">
+ <p className="text-white font-semibold font-sans text-sm">Trip Summary</p>
+            <div className="flex justify-between font-sans text-sm">
+              <span className="text-slate-400">Total events</span>
+ <span className="text-white font-semibold">{days.reduce(function(s,d) { return s + d.events.length; }, 0)}</span>
+            </div>
+            <div className="flex justify-between font-sans text-sm">
+              <span className="text-slate-400">Total spent</span>
+ <span className="text-emerald-400 font-bold">A${trip.spent.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between font-sans text-sm">
+              <span className="text-slate-400">Budget remaining</span>
+ <span className="text-white font-semibold">A${(trip.budget - trip.spent).toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <BottomNav active="glance" go={go} />
+    </div>
+  );
+}
+function SettingsScreen(props) {
+  var go = props.go;
+  var trip = props.trip;
+  var trips = props.trips;
+  var setTrips = props.setTrips;
+  var activeTripId = props.activeTripId;
+  var stStatus = useState(trip ? trip.status : "upcoming");
+  var status = stStatus[0]; var setStatus = stStatus[1];
+  var stBudget = useState(trip ? String(trip.budget) : "");
+  var budget = stBudget[0]; var setBudget = stBudget[1];
+  var stName = useState(trip ? trip.name : "");
+  var tname = stName[0]; var setTname = stName[1];
+  var stDests = useState(trip ? trip.dests.join(", ") : "");
+  var dests = stDests[0]; var setDests = stDests[1];
+  var stStart = useState(trip ? trip.start : "");
+  var tstart = stStart[0]; var setTstart = stStart[1];
+  var stEnd = useState(trip ? trip.end : "");
+  var tend = stEnd[0]; var setTend = stEnd[1];
+  var stSaved = useState(false);
+  var saved = stSaved[0]; var setSaved = stSaved[1];
+  function save() {
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== activeTripId) return t;
+        var destArr = dests.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+        if (destArr.length === 0) destArr = t.dests;
+        var newStart = tstart || t.start;
+        var newEnd = tend || t.end;
+        var dayCount = t.tripDays;
+        if (newStart && newEnd) {
+          var ms = new Date(newEnd + "T12:00:00") - new Date(newStart + "T12:00:00");
+          var dc = Math.max(1, Math.round(ms / 86400000) + 1);
+          if (dc !== t.tripDays) dayCount = dc;
+        }
+        return { id:t.id, name:tname||t.name, dests:destArr, start:newStart, end:newEnd, tripDays:dayCount, budget:parseInt(budget)||t.budget, spent:t.spent, status:status, accent:t.accent, flags:t.flags, grad:t.grad, photo:t.photo, days:t.days };
+      });
+    });
+    setSaved(true);
+    setTimeout(function() { setSaved(false); }, 1500);
+  }
+  return (
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+      <div className={CN10}>
+        <div className={CN8}>
+ <button onClick={function() { go("timeline"); }} className={CN11}>Back</button>
+          <div>
+ <div className="text-xs text-orange-400 font-sans uppercase tracking-widest">{trip ? trip.name : ""}</div>
+            <h1 className={CN13}>Trip Settings</h1>
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-4 space-y-4">
+        <div className={CN1}>
+          <p className={CN4}>Trip Details</p>
+          <div>
+            <label className={CN15}>Trip Name</label>
+ <input type="text" value={tname} onChange={function(e) { setTname(e.target.value); }} className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white font-sans text-sm focus:outline-none focus:border-orange-500/70" />
+          </div>
+          <div>
+            <label className={CN15}>Destinations</label>
+            <input type="text" value={dests} onChange={function(e) { setDests(e.target.value); }} placeholder="e.g. Dubai, Barcelona, Paris" className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white font-sans text-sm focus:outline-none focus:border-orange-500/70 placeholder-slate-500" />
+            <p className="text-slate-600 text-xs font-sans mt-1">Separate multiple destinations with commas</p>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className={CN15}>Start Date</label>
+              <input type="date" value={tstart} onChange={function(e) { setTstart(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+            </div>
+            <div className="flex-1">
+              <label className={CN15}>End Date</label>
+              <input type="date" value={tend} onChange={function(e) { setTend(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+            </div>
+          </div>
+          <div>
+            <label className={CN15}>Budget (AUD)</label>
+ <input type="number" value={budget} onChange={function(e) { setBudget(e.target.value); }} className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white font-sans text-sm focus:outline-none focus:border-orange-500/70" />
+          </div>
+          <div>
+            <label className={CN15}>Trip Status</label>
+            <div className="flex gap-2">
+              {["upcoming","planning","completed"].map(function(s) {
+                var cls = status === s
+ ? "flex-1 py-2.5 rounded-xl text-xs font-semibold font-sans bg-orange-500 text-white"
+ : "flex-1 py-2.5 rounded-xl text-xs font-semibold font-sans bg-slate-800 text-slate-400 border border-slate-700";
+                var si = s;
+ return <button key={si} onClick={function() { setStatus(si); }} className={cls}>{si.charAt(0).toUpperCase() + si.slice(1)}</button>;
+              })}
+            </div>
+          </div>
+        </div>
+        <button onClick={save}
+          style={{
+            width:"100%", padding:"18px", borderRadius:"16px",
+            fontSize:"18px", fontWeight:"800", fontFamily:"sans-serif",
+            border:"none", cursor:"pointer",
+            background: saved ? "rgb(16,185,129)" : "linear-gradient(135deg, rgb(249,115,22), rgb(234,88,12))",
+            color:"white",
+            boxShadow: saved ? "0 4px 20px rgba(16,185,129,0.5)" : "0 6px 24px rgba(249,115,22,0.6)"
+          }}>
+          {saved ? "✓  Saved!" : "💾  Save Changes"}
+        </button>
+      </div>
+      <BottomNav active="settings" go={go} />
+    </div>
+  );
+}
+function CostsScreen(props) {
+  var go   = props.go;
+  var trip = props.trip;
+  var days = props.days;
+ var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
+ var AUD_RATES = {AUD:1,USD:1.52,EUR:1.65,GBP:1.93,JPY:0.0099,THB:0.044,SGD:1.13,NZD:0.92};
+  var CAT_COLOR = TC;
+  var catMap = {};
+  var allEvents = [];
+  for (var di = 0; di < days.length; di++) {
+    for (var ei = 0; ei < days[di].events.length; ei++) {
+      var ev = days[di].events[ei];
+      allEvents.push({ ev: ev, day: days[di].label, date: days[di].date });
+      var cat = ev.type || "Other";
+      if (!catMap[cat]) catMap[cat] = { total: 0, count: 0, icon: ev.icon };
+ catMap[cat].total += Math.round((parseFloat(ev.cost) || 0) * (AUD_RATES[ev.cur] || 1));
+      catMap[cat].count += 1;
+    }
+  }
+ var cats = Object.keys(catMap).sort(function(a, b) { return catMap[b].total - catMap[a].total; });
+ var grandTotal = cats.reduce(function(s, c) { return s + catMap[c].total; }, 0);
+  var budget = trip.budget || 0;
+  var remaining = budget - grandTotal;
+ var pct = budget > 0 ? Math.min(100, Math.round((grandTotal / budget) * 100)) : 0;
+  return (
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+      <div className={CN10}>
+        <div className="flex items-center gap-3 mb-3">
+ <button onClick={function() { go("timeline"); }} className={CN11}>Back</button>
+          <div>
+            <div className={CN12}>{trip.name}</div>
+            <h1 className={CN13}>Costs Breakdown</h1>
+          </div>
+        </div>
+        {/* Budget summary bar */}
+ <div className="bg-slate-800/60 rounded-2xl border border-slate-700/50 p-4 space-y-3">
+          <div className="flex justify-between font-sans text-sm">
+ <div><p className="text-slate-400 text-xs uppercase tracking-wider mb-0.5">Total Spent</p><p className="text-white font-bold text-xl">A${grandTotal.toLocaleString()}</p></div>
+ <div className="text-center"><p className="text-slate-400 text-xs uppercase tracking-wider mb-0.5">Remaining</p><p className={"font-bold text-xl " + (remaining < 0 ? "text-red-400" : "text-emerald-400")}>A${Math.abs(remaining).toLocaleString()}{remaining < 0 ? " over" : ""}</p></div>
+ <div className="text-right"><p className="text-slate-400 text-xs uppercase tracking-wider mb-0.5">Budget</p><p className="text-slate-300 font-bold text-xl">A${budget.toLocaleString()}</p></div>
+          </div>
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+ <div className={"h-full rounded-full " + (pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-gradient-to-r from-orange-500 to-amber-400")} style={{width: pct + "%"}} />
+          </div>
+ <p className="text-slate-500 text-xs font-sans text-center">{pct}% of budget used across {allEvents.length} events</p>
+        </div>
+      </div>
+      <div className="px-4 py-4 space-y-3">
+        {/* Category breakdown */}
+ <p className="text-white font-semibold font-sans text-sm">By Category</p>
+        {cats.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-5xl mb-3">💰</div>
+ <p className="text-slate-400 font-sans text-sm">No costs yet — add events with costs on the Timeline</p>
+          </div>
+        )}
+        {cats.map(function(cat) {
+          var info = catMap[cat];
+ var catPct = grandTotal > 0 ? Math.round((info.total / grandTotal) * 100) : 0;
+          var clr = CAT_COLOR[cat] || CAT_COLOR.Other;
+          return (
+            <div key={cat} className={CN2}>
+              <div className="flex items-center justify-between mb-2">
+                <div className={CN7}>
+ <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border font-sans " + clr}>{info.icon} {cat}</span>
+ <span className={CN6}>{info.count} event{info.count !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="text-right">
+                  <p className={CN25}>A${info.total.toLocaleString()}</p>
+                  <p className={CN6}>{catPct}%</p>
+                </div>
+              </div>
+              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+ <div className="h-full rounded-full bg-orange-500/70" style={{width: catPct + "%"}} />
+              </div>
+            </div>
+          );
+        })}
+        {/* Per-day breakdown */}
+        {days.length > 0 && (
+          <div className="space-y-2">
+ <p className="text-white font-semibold font-sans text-sm pt-2">By Day</p>
+            {days.map(function(day) {
+ var dayTotal = day.events.reduce(function(s, ev) { return s + Math.round((parseFloat(ev.cost) || 0) * (AUD_RATES[ev.cur] || 1)); }, 0);
+              if (dayTotal === 0 && day.events.length === 0) return null;
+              return (
+                <div key={day.id} className={CN2}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+ <span className="text-white font-semibold font-sans text-sm">{day.label}</span>
+ <span className="text-slate-500 text-xs font-sans ml-2">{fmtShort(day.date)}</span>
+                    </div>
+                    <span className={CN25}>A${dayTotal.toLocaleString()}</span>
+                  </div>
+ {day.events.filter(function(ev) { return ev.cost > 0; }).map(function(ev) {
+                    var sym = SYM[ev.cur] || ev.cur;
+ var evAUD = Math.round((parseFloat(ev.cost) || 0) * (AUD_RATES[ev.cur] || 1));
+                    return (
+ <div key={ev.id} className="flex items-center justify-between py-1.5 border-t border-slate-800/40 first:border-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-base shrink-0">{ev.icon}</span>
+ <span className="text-slate-300 text-xs font-sans truncate">{ev.title}</span>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+ <p className={CN20}>{sym}{(parseFloat(ev.cost)||0).toLocaleString()} {ev.cur}</p>
+ {ev.cur !== "AUD" && <p className={CN6}>A${evAUD.toLocaleString()}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+ {day.events.filter(function(ev) { return ev.cost > 0; }).length === 0 && (
+ <p className="text-slate-600 text-xs font-sans italic">No costs</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {/* Grand total summary */}
+        {grandTotal > 0 && (
+ <div className="bg-gradient-to-br from-orange-950/50 to-slate-900 rounded-2xl border border-orange-500/30 p-4 space-y-2">
+ <p className="text-orange-300 font-semibold font-sans text-sm">Trip Total</p>
+            <div className="flex justify-between font-sans">
+ <span className="text-slate-400 text-sm">Total spent (AUD equiv.)</span>
+ <span className="text-white font-bold text-lg">A${grandTotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between font-sans">
+              <span className="text-slate-400 text-sm">Budget</span>
+ <span className="text-slate-300 text-sm">A${budget.toLocaleString()}</span>
+            </div>
+            <div className="h-px bg-slate-700 my-1" />
+            <div className="flex justify-between font-sans">
+ <span className={"text-sm font-semibold " + (remaining < 0 ? "text-red-400" : "text-emerald-400")}>{remaining < 0 ? "Over budget by" : "Remaining"}</span>
+ <span className={"font-bold text-lg " + (remaining < 0 ? "text-red-400" : "text-emerald-400")}>A${Math.abs(remaining).toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <BottomNav active="" go={go} />
+    </div>
+  );
+}
+export default function MannieTravelsApp() {
+  var stScreen = useState("dashboard");
+  var screen = stScreen[0]; var setScreen = stScreen[1];
+  var stTripId = useState(null);
+  var activeTripId = stTripId[0]; var setActiveTripId = stTripId[1];
+  var stTrips = useState(TRIPS0);
+  var trips = stTrips[0]; var setTrips = stTrips[1];
+  var stDayIdx = useState(0);
+  var addDayIdx = stDayIdx[0]; var setAddDayIdx = stDayIdx[1];
+  var stActiveDay = useState(0);
+  var activeDay = stActiveDay[0]; var setActiveDay = stActiveDay[1];
+  var stSelDay = useState(0);
+  var selDay = stSelDay[0]; var setSelDay = stSelDay[1];
+  var stEditEv = useState(null);
+  var editEv = stEditEv[0]; var setEditEv = stEditEv[1];
+  var trip = null;
+  for (var ti = 0; ti < trips.length; ti++) {
+    if (trips[ti].id === activeTripId) { trip = trips[ti]; break; }
+  }
+  var days = trip ? (trip.days || []) : [];
+  function setDays(updater) {
+    if (!trip) return;
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== activeTripId) return t;
+ var newDays = typeof updater === "function" ? updater(t.days || []) : updater;
+        var total = 0;
+        for (var di = 0; di < newDays.length; di++) {
+          for (var ei = 0; ei < newDays[di].events.length; ei++) {
+ total += toAUD(newDays[di].events[ei].cost, newDays[di].events[ei].cur);
+          }
+        }
+ return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, tripDays:t.tripDays, budget:t.budget, spent:total, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:t.photo, days:newDays };
+      });
+    });
+  }
+  function saveEvent(dayIdx, event, isEdit) {
+    setDays(function(prev) {
+      if (isEdit) {
+        // Find which day currently has this event
+        var originalDayIdx = -1;
+        for (var di = 0; di < prev.length; di++) {
+          for (var ei = 0; ei < prev[di].events.length; ei++) {
+            if (prev[di].events[ei].id === event.id) { originalDayIdx = di; break; }
+          }
+          if (originalDayIdx !== -1) break;
+        }
+        // Remove from original day, add/update on new day
+        return prev.map(function(d, i) {
+          if (i === originalDayIdx && i !== dayIdx) {
+            // Remove from original day
+            return { id:d.id, label:d.label, date:d.date, events: d.events.filter(function(e) { return e.id !== event.id; }) };
+          }
+          if (i === dayIdx && i !== originalDayIdx) {
+            // Add to new day
+            return { id:d.id, label:d.label, date:d.date, events: d.events.concat([event]) };
+          }
+          if (i === dayIdx && i === originalDayIdx) {
+            // Same day - just update
+            return { id:d.id, label:d.label, date:d.date, events: d.events.map(function(e) { return e.id === event.id ? event : e; }) };
+          }
+          return d;
+        });
+      }
+      // New event - just add to the selected day
+      return prev.map(function(d, i) {
+        if (i !== dayIdx) return d;
+        return { id:d.id, label:d.label, date:d.date, events: d.events.concat([event]) };
+      });
+    });
+  }
+  function addEvent(dayIdx) {
+    setAddDayIdx(dayIdx);
+    setActiveDay(dayIdx);
+    setSelDay(dayIdx);
+    setEditEv(null);
+    setScreen("addEvent");
+  }
+  function editEvent(dayIdx, ev) {
+    setAddDayIdx(dayIdx);
+    setActiveDay(dayIdx);
+    setSelDay(dayIdx);
+    setEditEv(ev);
+    setScreen("addEvent");
+  }
+  function go(s, dayIdx) {
+    if (s !== "addEvent") setEditEv(null);
+    if (s === "timeline" && dayIdx !== undefined) setActiveDay(dayIdx);
+    setScreen(s);
+  }
+  function addTrip(t) {
+    var newDays = makeDays(t.start, t.tripDays || 7, {});
+ var fullTrip = { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, tripDays:t.tripDays||7, budget:t.budget, spent:0, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:null, days:newDays };
+    setTrips(function(prev) { return [fullTrip].concat(prev); });
+    setActiveTripId(t.id);
+  }
+ var dashEl = <DashboardScreen go={go} setActiveTripId={setActiveTripId} trips={trips} setTrips={setTrips} addTrip={addTrip} />;
+  if (screen === "dashboard" || !trip) return dashEl;
+ if (screen === "timeline")  return <TimelineScreen  go={go} trip={trip} days={days} setDays={setDays} onEdit={editEvent} onAdd={addEvent} activeDay={activeDay} setActiveDay={setActiveDay} />;
+ if (screen === "addEvent")  return <AddEditScreen   go={go} tripName={trip.name} dayIndex={addDayIdx} days={days} onSave={saveEvent} editEv={editEv} selDay={selDay} setSelDay={setSelDay} />;
+ if (screen === "glance")    return <GlanceScreen    go={go} trip={trip} days={days} setActiveDay={setActiveDay} />;
+ if (screen === "settings")  return <SettingsScreen  go={go} trip={trip} trips={trips} setTrips={setTrips} activeTripId={activeTripId} />;
+ if (screen === "costs")     return <CostsScreen     go={go} trip={trip} days={days} />;
+  return dashEl;
+}
