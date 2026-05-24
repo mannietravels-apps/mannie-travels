@@ -1265,7 +1265,7 @@ function GlanceScreen(props) {
  if (ev.contact) lines.push("     " + ev.contact.name + "  " + ev.contact.phone);
           if (ev.ref) lines.push("     Ref: " + ev.ref);
           if (ev.aircraft) lines.push("     " + ev.aircraft);
- if (ev.cost > 0) lines.push("     Cost: " + sym + ev.cost.toLocaleString() + " " + ev.cur);
+ if (ev.cost > 0 && !hc) lines.push("     Cost: " + sym + ev.cost.toLocaleString() + " " + ev.cur);
           if (ev.note) lines.push("     Note: " + ev.note);
         }
       }
