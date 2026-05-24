@@ -229,90 +229,58 @@ function PhotoEntry(props) {
   var tripId = props.tripId;
   var currentPhoto = props.currentPhoto;
   var setTrips = props.setTrips;
-  var stOpen = useState(false);
-  var open = stOpen[0]; var setOpen = stOpen[1];
-  var stUrl = useState("");
-  var url = stUrl[0]; var setUrl = stUrl[1];
-  function apply() {
-    var u = url.trim();
-    if (!u) return;
-    setTrips(function(prev) {
-      return prev.map(function(t) {
-        if (t.id !== tripId) return t;
- return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, days:t.days, tripDays:t.tripDays, budget:t.budget, spent:t.spent, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:u };
+  function handleFile(e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      var dataUrl = evt.target.result;
+      setTrips(function(prev) {
+        return prev.map(function(t) {
+          if (t.id !== tripId) return t;
+          return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, days:t.days, tripDays:t.tripDays, budget:t.budget, spent:t.spent, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:dataUrl };
+        });
       });
-    });
-    setUrl(""); setOpen(false);
-  }
-  function remove() {
-    setTrips(function(prev) {
-      return prev.map(function(t) {
-        if (t.id !== tripId) return t;
- return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, days:t.days, tripDays:t.tripDays, budget:t.budget, spent:t.spent, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:null };
-      });
-    });
-    setOpen(false);
-  }
-  if (!open) {
-    return (
-      <button onClick={function() { setOpen(true); }}
- style={{background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"9999px",padding:"6px 12px",color:"white",fontSize:"12px",fontFamily:"sans-serif",cursor:"pointer",display:"inline-block"}}>
-        📷 {currentPhoto ? "Change Photo" : "Add Photo"}
-      </button>
-    );
+    };
+    reader.readAsDataURL(f);
   }
   return (
- <div style={{background:"rgb(15,23,42)",border:"1px solid rgba(71,85,105,0.8)",borderRadius:"16px",padding:"12px",width:"280px",boxShadow:"0 8px 32px rgba(0,0,0,0.8)"}}>
- <p style={{color:"rgb(148,163,184)",fontSize:"11px",fontFamily:"sans-serif",marginBottom:"8px",lineHeight:"1.5"}}>Paste a photo URL from Google Images, Unsplash or anywhere online:</p>
- <input type="url" value={url} onChange={function(e) { setUrl(e.target.value); }}
-        placeholder="https://images.unsplash.com/..."
- style={{width:"100%",background:"rgba(30,41,59,0.9)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"8px",padding:"8px 10px",color:"white",fontSize:"12px",fontFamily:"sans-serif",boxSizing:"border-box",outline:"none",marginBottom:"8px"}} />
-      <div style={{display:"flex",gap:"6px"}}>
-        <button onClick={function() { setOpen(false); setUrl(""); }}
- style={{flex:1,padding:"7px",background:"transparent",border:"1px solid rgba(71,85,105,0.5)",borderRadius:"8px",color:"rgb(148,163,184)",fontSize:"12px",fontFamily:"sans-serif",cursor:"pointer"}}>Cancel</button>
-        {currentPhoto && <button onClick={remove}
- style={{flex:1,padding:"7px",background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:"8px",color:"rgb(252,165,165)",fontSize:"12px",fontFamily:"sans-serif",cursor:"pointer"}}>Remove</button>}
-        <button onClick={apply} disabled={!url.trim()}
- style={{flex:1,padding:"7px",background:"rgb(249,115,22)",border:"none",borderRadius:"8px",color:"white",fontSize:"12px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"bold",opacity:url.trim()?1:0.5}}>Set Photo</button>
-      </div>
-    </div>
+    <label style={{cursor:"pointer",display:"inline-block"}}>
+      <span style={{background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"9999px",padding:"6px 12px",color:"white",fontSize:"12px",fontFamily:"sans-serif",display:"inline-block"}}>
+        📷 {currentPhoto ? "Change Photo" : "Add Photo"}
+      </span>
+      <input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}} />
+    </label>
   );
 }
 function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
-  var stVal = useState("");
-  var val = stVal[0]; var setVal = stVal[1];
-  function add() {
-    var v = val.trim();
-    if (!v) return;
-    setDocs(docs.concat([v]));
-    setVal("");
+  function handleFiles(e) {
+    if (!e.target.files) return;
+    var names = [];
+    for (var i = 0; i < e.target.files.length; i++) {
+      names.push(e.target.files[i].name);
+    }
+    setDocs(docs.concat(names));
   }
   function removeDoc(idx) {
     setDocs(docs.filter(function(_, j) { return j !== idx; }));
   }
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
-        <input type="text" value={val}
-          onChange={function(e) { setVal(e.target.value); }}
-          onKeyDown={function(e) { if (e.key === "Enter") add(); }}
-          placeholder="Booking ref, doc name, or link..."
- className="flex-1 bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500/70 font-sans text-sm" />
-        <button onClick={add}
- className="px-4 py-2.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold font-sans rounded-xl">
-          Add
-        </button>
-      </div>
+      <label className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-600/60 text-slate-400 text-sm font-sans hover:border-orange-500/50 hover:text-orange-400 cursor-pointer">
+        📎 Attach Document or Photo
+        <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,image/*" onChange={handleFiles} style={{display:"none"}} />
+      </label>
       {docs.length > 0 && (
         <div className="space-y-1.5">
           {docs.map(function(d, i) {
             var idx = i;
             return (
- <div key={idx} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
- <div className={CN7}><span>📄</span><span className={CN20}>{d}</span></div>
- <button onClick={function() { removeDoc(idx); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
+              <div key={idx} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
+                <div className={CN7}><span>📄</span><span className={CN20}>{d}</span></div>
+                <button onClick={function() { removeDoc(idx); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
               </div>
             );
           })}
