@@ -262,64 +262,30 @@ function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
   function handleFiles(e) {
-    if (!e.target.files || e.target.files.length === 0) return;
-    var files = Array.from(e.target.files);
-    var results = [];
-    var pending = files.length;
-    files.forEach(function(file) {
-      var reader = new FileReader();
-      var fname = file.name;
-      var ftype = file.type;
-      reader.onload = function(evt) {
-        results.push({name: fname, data: evt.target.result, type: ftype});
-        pending--;
-        if (pending === 0) {
-          setDocs(function(prev) { return prev.concat(results); });
-        }
-      };
-      reader.onerror = function() {
-        pending--;
-        results.push({name: fname, data: null, type: ftype});
-        if (pending === 0) {
-          setDocs(function(prev) { return prev.concat(results); });
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    if (!e.target.files) return;
+    var names = [];
+    for (var i = 0; i < e.target.files.length; i++) {
+      names.push(e.target.files[i].name);
+    }
+    if (names.length > 0) setDocs(docs.concat(names));
   }
   function removeDoc(idx) {
     setDocs(docs.filter(function(_, j) { return j !== idx; }));
   }
-  function openDoc(doc) {
-    var win = window.open();
-    if (doc.type && doc.type.startsWith("image/")) {
-      win.document.write('<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="' + doc.data + '" style="max-width:100%;max-height:100vh" /></body></html>');
-    } else {
-      var link = win.document.createElement("a");
-      link.href = doc.data;
-      link.download = doc.name;
-      win.document.body.appendChild(link);
-      link.click();
-    }
-  }
   return (
     <div className="space-y-2">
-      <label className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-600/60 text-slate-400 text-sm font-sans hover:border-orange-500/50 hover:text-orange-400 cursor-pointer">
-        📎 Attach Document or Photo
-        <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,image/*" onChange={handleFiles} style={{display:"none"}} />
+      <label className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-600/60 text-slate-400 text-sm font-sans cursor-pointer">
+        📎 Attach Document
+        <input type="file" multiple onChange={handleFiles} style={{display:"none"}} />
       </label>
       {docs.length > 0 && (
         <div className="space-y-1.5">
           {docs.map(function(d, i) {
             var idx = i;
             var docName = typeof d === "string" ? d : d.name;
-            var hasData = typeof d === "object" && d.data;
             return (
               <div key={idx} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
-                <button onClick={function() { if (hasData) openDoc(d); }} className={CN7} style={{background:"none",border:"none",cursor:hasData?"pointer":"default",padding:0,textAlign:"left"}}>
-                  <span>📄</span>
-                  <span className={CN20} style={{color:hasData?"rgb(147,197,253)":"inherit",textDecoration:hasData?"underline":"none"}}>{docName}</span>
-                </button>
+                <div className={CN7}><span>📄</span><span className={CN20}>{docName}</span></div>
                 <button onClick={function() { removeDoc(idx); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
               </div>
             );
@@ -329,6 +295,7 @@ function DocEntry(props) {
     </div>
   );
 }
+
 function SmartDatePicker(props) {
   var value = props.value;   // "YYYY-MM-DD" internally
   var onChange = props.onChange;
@@ -1026,25 +993,10 @@ function TimelineScreen(props) {
                             <div className="space-y-1">
                               {ev.docs.map(function(d, di) {
                                 var docName = typeof d === "string" ? d : d.name;
-                                var hasData = typeof d === "object" && d.data;
-                                function openDoc() {
-                                  if (!hasData) return;
-                                  var win = window.open();
-                                  if (d.type && d.type.startsWith("image/")) {
-                                    win.document.write('<html><body style="margin:0;background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="' + d.data + '" style="max-width:100%;max-height:100vh" /></body></html>');
-                                  } else {
-                                    var link = win.document.createElement("a");
-                                    link.href = d.data;
-                                    link.download = docName;
-                                    win.document.body.appendChild(link);
-                                    link.click();
-                                  }
-                                }
                                 return (
-                                  <div key={di} onClick={openDoc} className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2" style={{cursor:hasData?"pointer":"default"}}>
+                                  <div key={di} className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
                                     <span>📄</span>
-                                    <span className={CN20} style={{color:hasData?"rgb(147,197,253)":"inherit",textDecoration:hasData?"underline":"none"}}>{docName}</span>
-                                    {hasData && <span style={{fontSize:"10px",color:"rgb(100,150,200)",marginLeft:"auto"}}>tap to open</span>}
+                                    <span className={CN20}>{docName}</span>
                                   </div>
                                 );
                               })}
