@@ -362,6 +362,8 @@ function AddEditScreen(props) {
   var lkRes = stLkRes[0]; var setLkRes = stLkRes[1];
   var selDay = props.selDay !== undefined ? props.selDay : dayIndex;
   var setSelDay = props.setSelDay;
+  var selDayRef = useRef(selDay);
+  selDayRef.current = selDay;
   var stSaved = useState(false);
   var saved = stSaved[0]; var setSaved = stSaved[1];
   var stDate = useState(isEdit ? (ev.date || "") : "");
@@ -462,9 +464,9 @@ function AddEditScreen(props) {
       note: note || "",
       docs: docs
     };
-    onSave(selDay, event, isEdit);
+    onSave(selDayRef.current, event, isEdit);
     setSaved(true);
-    setTimeout(function() { setSaved(false); go("timeline", selDay); }, 1100);
+    setTimeout(function() { setSaved(false); go("timeline", selDayRef.current); }, 1100);
   }
   var inp = CN14;
   var lbl = CN15;
@@ -627,7 +629,8 @@ function AddEditScreen(props) {
           {isHotel ? (
             <div className="space-y-3">
               <div className="flex gap-3">
- <div className="flex-[2]"><label className={lbl}>Check-in Date</label><input type="date" value={date} onChange={function(e) { setDate(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-[2]"><label className={lbl}>Check-in Date</label><input type="date" value={date} onChange={function(e) { setDate(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+{date && <div style={{fontSize:"12px",color:"rgb(251,146,60)",fontFamily:"sans-serif",marginTop:"4px"}}>{fmtShort(date)}</div>}</div>
  <div className="flex-1"><label className={lbl}>Check-in Time</label><input type="time" value={dep} onChange={function(e) { setDep(e.target.value); }} className={inp} /></div>
               </div>
               <div className="flex gap-3">
@@ -651,7 +654,8 @@ function AddEditScreen(props) {
           ) : (
             <div className="space-y-3">
               <div className="flex gap-3">
- <div className="flex-[2]"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Date" : hasArrDate ? "Departure Date" : "Date"}</label><input type="date" value={date} onChange={function(e) { var v=e.target.value; setDate(v); if (hasTimes && dep && arr) setDur(calcDuration(v, dep, arrDate||v, arr)); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-[2]"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Date" : hasArrDate ? "Departure Date" : "Date"}</label><input type="date" value={date} onChange={function(e) { var v=e.target.value; setDate(v); if (hasTimes && dep && arr) setDur(calcDuration(v, dep, arrDate||v, arr)); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+{date && <div style={{fontSize:"12px",color:"rgb(251,146,60)",fontFamily:"sans-serif",marginTop:"4px"}}>{fmtShort(date)}</div>}</div>
  <div className="flex-1"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Time" : hasTimes ? "Departs" : "Time"}</label><input type="time" value={dep} onChange={function(e) { var v = e.target.value; setDep(v); if (hasTimes && arr) setDur(calcDuration(date, v, arrDate||date, arr)); }} className={inp} /></div>
               </div>
               {hasArrDate && (
@@ -1306,8 +1310,27 @@ function GlanceScreen(props) {
               style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid",background:hideCosts?"rgba(245,158,11,0.2)":"rgba(30,41,59,0.8)",borderColor:hideCosts?"rgba(245,158,11,0.4)":"rgba(71,85,105,0.7)",color:hideCosts?"rgb(252,211,77)":"rgb(148,163,184)"}}>
               {hideCosts ? "💰 Costs Hidden" : "💰 Hide Costs"}
             </button>
-            <button onClick={handleCopy} className={"text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border " + (copied ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white")}>
-              {copied ? "✓ Copied!" : "📋 Copy Itinerary"}
+  <button onClick={handleCopy} className={"text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border " + (copied ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white")}>
+              {copied ? "✓ Copied!" : "📋 Copy"}
+            </button>
+            <button onClick={function() {
+              var text = buildText();
+              var subject = encodeURIComponent(trip.name + " Itinerary");
+              var body = encodeURIComponent(text);
+              window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+            }} className="text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border bg-slate-800 border-slate-700 text-slate-300 hover:text-white">
+              ✉️ Email
+            </button>
+            <button onClick={function() {
+              var text = buildText();
+              var win = window.open("", "_blank");
+              if (win) {
+                win.document.write("<html><head><title>" + trip.name + " Itinerary</title><style>body{font-family:Georgia,serif;padding:32px;max-width:700px;margin:0 auto;color:#111;line-height:1.6}pre{white-space:pre-wrap;font-family:Georgia,serif;font-size:14px}</style></head><body><pre>" + text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") + "</pre></body></html>");
+                win.document.close();
+                setTimeout(function() { win.print(); }, 400);
+              }
+            }} className="text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border bg-slate-800 border-slate-700 text-slate-300 hover:text-white">
+              🖨️ Print
             </button>
           </div>
         </div>
@@ -1712,12 +1735,36 @@ export default function MannieTravelsApp() {
   }
   function saveEvent(dayIdx, event, isEdit) {
     setDays(function(prev) {
+      if (isEdit) {
+        // Find which day currently has this event
+        var originalDayIdx = -1;
+        for (var di = 0; di < prev.length; di++) {
+          for (var ei = 0; ei < prev[di].events.length; ei++) {
+            if (prev[di].events[ei].id === event.id) { originalDayIdx = di; break; }
+          }
+          if (originalDayIdx !== -1) break;
+        }
+        // Remove from original day, add/update on new day
+        return prev.map(function(d, i) {
+          if (i === originalDayIdx && i !== dayIdx) {
+            // Remove from original day
+            return { id:d.id, label:d.label, date:d.date, events: d.events.filter(function(e) { return e.id !== event.id; }) };
+          }
+          if (i === dayIdx && i !== originalDayIdx) {
+            // Add to new day
+            return { id:d.id, label:d.label, date:d.date, events: d.events.concat([event]) };
+          }
+          if (i === dayIdx && i === originalDayIdx) {
+            // Same day - just update
+            return { id:d.id, label:d.label, date:d.date, events: d.events.map(function(e) { return e.id === event.id ? event : e; }) };
+          }
+          return d;
+        });
+      }
+      // New event - just add to the selected day
       return prev.map(function(d, i) {
         if (i !== dayIdx) return d;
-        if (isEdit) {
- return { id:d.id, label:d.label, date:d.date, events: d.events.map(function(e) { return e.id === event.id ? event : e; }) };
-        }
- return { id:d.id, label:d.label, date:d.date, events: d.events.concat([event]) };
+        return { id:d.id, label:d.label, date:d.date, events: d.events.concat([event]) };
       });
     });
   }
