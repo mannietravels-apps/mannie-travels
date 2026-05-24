@@ -1080,7 +1080,7 @@ function DashboardScreen(props) {
  <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 pb-4 px-5">
         <div className="flex items-center justify-between mb-5">
           <div>
- <div className="flex items-center gap-2 mb-1"></span><img src="/logo.png" style={{height:"44px",width:"auto"}} alt="Mannie Travels" /></span></div>
+ <div className="flex items-center gap-2 mb-1"><img src="/logo.png" style={{height:"44px",width:"auto"}} alt="Mannie Travels" /></div>
             <h1 className="text-3xl font-bold text-white">My Trips</h1>
           </div>
  <button onClick={function() { setShowNew(true); }} className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold font-sans shadow-lg shadow-orange-900/50">+ New Trip</button>
@@ -1302,9 +1302,11 @@ function GlanceScreen(props) {
     var total = days.reduce(function(s,d) {
  return s + d.events.reduce(function(s2,ev) { return s2 + toAUD(ev.cost, ev.cur); }, 0);
     }, 0);
- lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
+ if (!hideCosts) lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
     return lines.join("\n");
   }
+  var stHideCosts = useState(false);
+  var hideCosts = stHideCosts[0]; var setHideCosts = stHideCosts[1];
   var stCopied = useState(false);
   var copied = stCopied[0]; var setCopied = stCopied[1];
   var stShowText = useState(false);
@@ -1331,9 +1333,15 @@ function GlanceScreen(props) {
               <h1 className={CN13}>Itinerary</h1>
             </div>
           </div>
- <button onClick={handleCopy} className={"text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border " + (copied ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white")}>
-            {copied ? "✓ Copied!" : "📋 Copy Itinerary"}
-          </button>
+ <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+            <button onClick={function() { setHideCosts(!hideCosts); }}
+              style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid",background:hideCosts?"rgba(245,158,11,0.2)":"rgba(30,41,59,0.8)",borderColor:hideCosts?"rgba(245,158,11,0.4)":"rgba(71,85,105,0.7)",color:hideCosts?"rgb(252,211,77)":"rgb(148,163,184)"}}>
+              {hideCosts ? "💰 Costs Hidden" : "💰 Hide Costs"}
+            </button>
+            <button onClick={handleCopy} className={"text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border " + (copied ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white")}>
+              {copied ? "✓ Copied!" : "📋 Copy Itinerary"}
+            </button>
+          </div>
         </div>
         <div className="flex gap-2">
  <button onClick={function() { setView("week"); }} className={"flex-1 py-2 rounded-xl text-xs font-semibold font-sans border " + (view === "week" ? "bg-orange-500 text-white border-orange-600" : "bg-slate-800 text-slate-400 border-slate-700")}>
