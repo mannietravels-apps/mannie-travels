@@ -362,6 +362,8 @@ function AddEditScreen(props) {
   var lkRes = stLkRes[0]; var setLkRes = stLkRes[1];
   var selDay = props.selDay !== undefined ? props.selDay : dayIndex;
   var setSelDay = props.setSelDay;
+  var selDayRef = useRef(selDay);
+  selDayRef.current = selDay;
   var stSaved = useState(false);
   var saved = stSaved[0]; var setSaved = stSaved[1];
   var stDate = useState(isEdit ? (ev.date || "") : "");
@@ -462,9 +464,9 @@ function AddEditScreen(props) {
       note: note || "",
       docs: docs
     };
-    onSave(selDay, event, isEdit);
+    onSave(selDayRef.current, event, isEdit);
     setSaved(true);
-    setTimeout(function() { setSaved(false); go("timeline", selDay); }, 1100);
+    setTimeout(function() { setSaved(false); go("timeline", selDayRef.current); }, 1100);
   }
   var inp = CN14;
   var lbl = CN15;
@@ -627,7 +629,8 @@ function AddEditScreen(props) {
           {isHotel ? (
             <div className="space-y-3">
               <div className="flex gap-3">
- <div className="flex-[2]"><label className={lbl}>Check-in Date</label><input type="date" value={date} onChange={function(e) { setDate(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-[2]"><label className={lbl}>Check-in Date</label><input type="date" value={date} onChange={function(e) { setDate(e.target.value); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+{date && <div style={{fontSize:"12px",color:"rgb(251,146,60)",fontFamily:"sans-serif",marginTop:"4px"}}>{fmtShort(date)}</div>}</div>
  <div className="flex-1"><label className={lbl}>Check-in Time</label><input type="time" value={dep} onChange={function(e) { setDep(e.target.value); }} className={inp} /></div>
               </div>
               <div className="flex gap-3">
@@ -651,7 +654,8 @@ function AddEditScreen(props) {
           ) : (
             <div className="space-y-3">
               <div className="flex gap-3">
- <div className="flex-[2]"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Date" : hasArrDate ? "Departure Date" : "Date"}</label><input type="date" value={date} onChange={function(e) { var v=e.target.value; setDate(v); if (hasTimes && dep && arr) setDur(calcDuration(v, dep, arrDate||v, arr)); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} /></div>
+ <div className="flex-[2]"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Date" : hasArrDate ? "Departure Date" : "Date"}</label><input type="date" value={date} onChange={function(e) { var v=e.target.value; setDate(v); if (hasTimes && dep && arr) setDur(calcDuration(v, dep, arrDate||v, arr)); }} style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",colorScheme:"dark"}} />
+{date && <div style={{fontSize:"12px",color:"rgb(251,146,60)",fontFamily:"sans-serif",marginTop:"4px"}}>{fmtShort(date)}</div>}</div>
  <div className="flex-1"><label className={lbl}>{selType === "Car Rental" ? "Pick-up Time" : hasTimes ? "Departs" : "Time"}</label><input type="time" value={dep} onChange={function(e) { var v = e.target.value; setDep(v); if (hasTimes && arr) setDur(calcDuration(date, v, arrDate||date, arr)); }} className={inp} /></div>
               </div>
               {hasArrDate && (
