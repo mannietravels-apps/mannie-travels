@@ -992,11 +992,11 @@ function TimelineScreen(props) {
                           {ev.docs && ev.docs.length > 0 && (
                             <div className="space-y-1">
                               {ev.docs.map(function(d, di) {
-                                var docName = typeof d === "string" ? d : d.name;
+                                var docName = typeof d === "string" ? d : (d && d.name ? d.name : "Document");
                                 return (
                                   <div key={di} className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
                                     <span>📄</span>
-                                    <span className={CN20}>{docName}</span>
+                                    <span className={CN20} style={{flex:1}}>{docName}</span>
                                   </div>
                                 );
                               })}
