@@ -1241,7 +1241,7 @@ function GlanceScreen(props) {
   var visibleDays = view === "week"
     ? days.slice(weekStart * WEEK, weekStart * WEEK + WEEK)
     : days;
-  function buildText() {
+  function buildText(hc) {
     var lines = [];
     lines.push(trip.name.toUpperCase());
     lines.push(trip.dests.join(", "));
@@ -1274,7 +1274,7 @@ function GlanceScreen(props) {
     var total = days.reduce(function(s,d) {
  return s + d.events.reduce(function(s2,ev) { return s2 + toAUD(ev.cost, ev.cur); }, 0);
     }, 0);
- if (!hideCosts) lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
+ if (!hc) lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
     return lines.join("\n");
   }
   var stHideCosts = useState(false);
@@ -1284,7 +1284,7 @@ function GlanceScreen(props) {
   var stShowText = useState(false);
   var showText = stShowText[0]; var setShowText = stShowText[1];
   function handleCopy() {
-    var text = buildText();
+    var text = buildText(hideCosts);
     try {
       navigator.clipboard.writeText(text).then(function() {
         setCopied(true);
@@ -1305,31 +1305,31 @@ function GlanceScreen(props) {
               <h1 className={CN13}>Itinerary</h1>
             </div>
           </div>
- <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+<div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"4px"}}>
             <button onClick={function() { setHideCosts(!hideCosts); }}
               style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid",background:hideCosts?"rgba(245,158,11,0.2)":"rgba(30,41,59,0.8)",borderColor:hideCosts?"rgba(245,158,11,0.4)":"rgba(71,85,105,0.7)",color:hideCosts?"rgb(252,211,77)":"rgb(148,163,184)"}}>
               {hideCosts ? "💰 Costs Hidden" : "💰 Hide Costs"}
             </button>
-  <button onClick={handleCopy} className={"text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border " + (copied ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300 hover:text-white")}>
+            <button onClick={handleCopy} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:copied?"rgba(16,185,129,0.2)":"rgba(30,41,59,0.8)",color:copied?"rgb(110,231,183)":"rgb(148,163,184)"}}>
               {copied ? "✓ Copied!" : "📋 Copy"}
             </button>
             <button onClick={function() {
-              var text = buildText();
+              var text = buildText(hideCosts);
               var subject = encodeURIComponent(trip.name + " Itinerary");
               var body = encodeURIComponent(text);
               window.location.href = "mailto:?subject=" + subject + "&body=" + body;
-            }} className="text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border bg-slate-800 border-slate-700 text-slate-300 hover:text-white">
+            }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
               ✉️ Email
             </button>
             <button onClick={function() {
-              var text = buildText();
+              var text = buildText(hideCosts);
               var win = window.open("", "_blank");
               if (win) {
                 win.document.write("<html><head><title>" + trip.name + " Itinerary</title><style>body{font-family:Georgia,serif;padding:32px;max-width:700px;margin:0 auto;color:#111;line-height:1.6}pre{white-space:pre-wrap;font-family:Georgia,serif;font-size:14px}</style></head><body><pre>" + text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") + "</pre></body></html>");
                 win.document.close();
                 setTimeout(function() { win.print(); }, 400);
               }
-            }} className="text-xs px-3 py-2 rounded-xl font-sans flex items-center gap-1.5 border bg-slate-800 border-slate-700 text-slate-300 hover:text-white">
+            }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
               🖨️ Print
             </button>
           </div>
@@ -1345,7 +1345,7 @@ function GlanceScreen(props) {
         {showText && (
           <div className="mt-3">
  <p className="text-slate-400 text-xs font-sans mb-1">Select all text below and copy:</p>
-            <textarea readOnly value={buildText()} rows={8}
+            <textarea readOnly value={buildText(hideCosts)} rows={8}
  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-300 text-xs font-mono resize-none focus:outline-none"
               onFocus={function(e) { e.target.select(); }}
             />
