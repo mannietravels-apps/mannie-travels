@@ -262,14 +262,27 @@ function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
   function handleFiles(e) {
-    if (!e.target.files) return;
+    if (!e.target.files || e.target.files.length === 0) return;
     var files = Array.from(e.target.files);
+    var results = [];
+    var pending = files.length;
     files.forEach(function(file) {
       var reader = new FileReader();
+      var fname = file.name;
+      var ftype = file.type;
       reader.onload = function(evt) {
-        setDocs(function(prev) {
-          return prev.concat([{name: file.name, data: evt.target.result, type: file.type}]);
-        });
+        results.push({name: fname, data: evt.target.result, type: ftype});
+        pending--;
+        if (pending === 0) {
+          setDocs(function(prev) { return prev.concat(results); });
+        }
+      };
+      reader.onerror = function() {
+        pending--;
+        results.push({name: fname, data: null, type: ftype});
+        if (pending === 0) {
+          setDocs(function(prev) { return prev.concat(results); });
+        }
       };
       reader.readAsDataURL(file);
     });
