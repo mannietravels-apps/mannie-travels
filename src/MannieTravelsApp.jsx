@@ -1962,13 +1962,29 @@ function WishlistScreen(props) {
 export default function MannieTravelsApp() {
   var stScreen = useState("dashboard");
   var screen = stScreen[0]; var setScreen = stScreen[1];
-  var stTripId = useState(null);
+  var stTripId = useState(function() {
+    try {
+      var saved = localStorage.getItem("mannie_active_trip");
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return null;
+  });
   var activeTripId = stTripId[0]; var setActiveTripId = stTripId[1];
   var stTrips = useState(TRIPS0);
   var trips = stTrips[0]; var setTrips = stTrips[1];
   useEffect(function() {
     try { localStorage.setItem("mannie_trips", JSON.stringify(trips)); } catch(e) {}
   }, [trips]);
+  useEffect(function() {
+    try {
+      if (activeTripId) localStorage.setItem("mannie_active_trip", JSON.stringify(activeTripId));
+    } catch(e) {}
+  }, [activeTripId]);
+  useEffect(function() {
+    if (!activeTripId && trips.length > 0) {
+      setActiveTripId(trips[0].id);
+    }
+  }, []);
   var stDayIdx = useState(0);
   var addDayIdx = stDayIdx[0]; var setAddDayIdx = stDayIdx[1];
   var stActiveDay = useState(0);
@@ -2059,6 +2075,12 @@ export default function MannieTravelsApp() {
     setActiveTripId(t.id);
   }
  var dashEl = <DashboardScreen go={go} setActiveTripId={setActiveTripId} trips={trips} setTrips={setTrips} addTrip={addTrip} />;
+  if (!trip && screen !== "dashboard") {
+    if (trips.length > 0) {
+      setActiveTripId(trips[0].id);
+    }
+    return dashEl;
+  }
   if (screen === "dashboard" || !trip) return dashEl;
  if (screen === "timeline")  return <TimelineScreen  go={go} trip={trip} days={days} setDays={setDays} onEdit={editEvent} onAdd={addEvent} activeDay={activeDay} setActiveDay={setActiveDay} />;
  if (screen === "addEvent")  return <AddEditScreen   go={go} tripName={trip.name} dayIndex={addDayIdx} days={days} onSave={saveEvent} editEv={editEv} selDay={selDay} setSelDay={setSelDay} />;
