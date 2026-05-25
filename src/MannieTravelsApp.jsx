@@ -1688,7 +1688,7 @@ function CostsScreen(props) {
             <h1 className={CN13}>Costs Breakdown</h1>
           </div>
         </div>
-        {/* Budget summary bar */}
+        
  <div className="bg-slate-800/60 rounded-2xl border border-slate-700/50 p-4 space-y-3">
           <div className="flex justify-between font-sans text-sm">
  <div><p className="text-slate-400 text-xs uppercase tracking-wider mb-0.5">Total Spent</p><p className="text-white font-bold text-xl">A${grandTotal.toLocaleString()}</p></div>
@@ -1702,7 +1702,7 @@ function CostsScreen(props) {
         </div>
       </div>
       <div className="px-4 py-4 space-y-3">
-        {/* Category breakdown */}
+        
  <p className="text-white font-semibold font-sans text-sm">By Category</p>
         {cats.length === 0 && (
           <div className="text-center py-12">
@@ -1732,7 +1732,7 @@ function CostsScreen(props) {
             </div>
           );
         })}
-        {/* Per-day breakdown */}
+        
         {days.length > 0 && (
           <div className="space-y-2">
  <p className="text-white font-semibold font-sans text-sm pt-2">By Day</p>
@@ -1772,7 +1772,7 @@ function CostsScreen(props) {
             })}
           </div>
         )}
-        {/* Grand total summary */}
+        
         {grandTotal > 0 && (
  <div className="bg-gradient-to-br from-orange-950/50 to-slate-900 rounded-2xl border border-orange-500/30 p-4 space-y-2">
  <p className="text-orange-300 font-semibold font-sans text-sm">Trip Total</p>
@@ -1879,7 +1879,7 @@ function WishlistScreen(props) {
         </div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"16px 20px 100px"}}>
-        {/* Filter tabs */}
+        
         <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px"}}>
           {[{id:"all",label:"All",icon:"✨"}].concat(WISH_CATS).concat([{id:"done",label:"Done",icon:"✅"}]).map(function(c) {
             var isActive = filter === c.id;
@@ -1894,7 +1894,7 @@ function WishlistScreen(props) {
             );
           })}
         </div>
-        {/* Add form */}
+        
         {showAdd && (
           <div style={{background:"rgba(30,41,59,0.9)",border:"1px solid rgba(71,85,105,0.5)",borderRadius:"16px",padding:"16px",marginBottom:"16px"}}>
             <p style={{color:"white",fontFamily:"sans-serif",fontWeight:"bold",fontSize:"14px",margin:"0 0 12px"}}>Add to Wish List</p>
@@ -1916,7 +1916,7 @@ function WishlistScreen(props) {
             </div>
           </div>
         )}
-        {/* Items list */}
+        
         {filtered.length === 0 && (
           <div style={{textAlign:"center",padding:"48px 0",color:"rgb(71,85,105)"}}>
             <div style={{fontSize:"48px",marginBottom:"12px"}}>✨</div>
