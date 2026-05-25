@@ -1953,7 +1953,7 @@ function WishlistScreen(props) {
             </div>
           );
         })}
-      <div style={{height:"72px"}} />
+      </div>
       <BottomNav active="wishlist" go={go} />
     </div>
   );
