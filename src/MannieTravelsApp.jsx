@@ -879,9 +879,20 @@ function TimelineScreen(props) {
               if (day && day.events.length > 0) {
                 for (var ei = 0; ei < day.events.length; ei++) {
                   var ev = day.events[ei];
-                  if (ev.type === "Hotel" && ev.addr) { city = ev.addr.split(",").slice(-2,-1)[0] || ""; break; }
-                  if (ev.aCity) { city = ev.aCity; break; }
+                  if (ev.type === "Hotel" && ev.addr) {
+                    var parts = ev.addr.split(",");
+                    city = parts.length > 2 ? parts[parts.length-2].trim() : parts[0].trim();
+                    break;
+                  }
+                  if (ev.aCity && ev.aCity !== "") { city = ev.aCity; break; }
+                  if (ev.type === "Flight" && ev.aCity) { city = ev.aCity; break; }
+                  if (ev.dCity && activeDay === 0) { city = ev.dCity; break; }
                 }
+              }
+              if (!city && day && day.date) {
+                var dayIdx = activeDay;
+                var dest = trip.dests && trip.dests[dayIdx] ? trip.dests[dayIdx] : (trip.dests && trip.dests[0] ? trip.dests[0] : trip.name);
+                city = dest;
               }
               if (!city) city = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
               city = city.trim();
