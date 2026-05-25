@@ -207,7 +207,7 @@ function BottomNav(props) {
     {label:"Trips", s:"dashboard", icon:"🗺️"},
     {label:"Timeline", s:"timeline", icon:"📅"},
     {label:"Add", s:"addEvent", icon:"➕", primary:true},
-    {label:"Glance", s:"glance", icon:"📋"},{label:"Wishlist", s:"wishlist", icon:"✨"},
+    {label:"Glance", s:"glance", icon:"📋"},
     {label:"Settings", s:"settings", icon:"⚙️"}
   ];
   return (
@@ -826,7 +826,7 @@ function TimelineScreen(props) {
             <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
             <button onClick={function() {
               var dest = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
-              window.open("https://wttr.in/" + encodeURIComponent(dest), "_blank");
+              window.open("https://www.timeanddate.com/weather/" + encodeURIComponent(dest.toLowerCase().replace(/ /g,"-")) + "/ext", "_blank");
             }} style={{fontSize:"11px",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"9999px",padding:"2px 8px",color:"rgba(255,255,255,0.9)",cursor:"pointer",fontFamily:"sans-serif",whiteSpace:"nowrap"}}>
               🌤️ Weather
             </button>
@@ -868,7 +868,7 @@ function TimelineScreen(props) {
             <span className={CN25}>{cur.label}</span>
  <span className="text-slate-400 text-sm font-sans ml-2">{fmtFull(cur.date)}</span>
           </div>
- <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+ <div style={{display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}}>
             <button onClick={function() {
               var day = days[activeDay];
               if (!day) return;
@@ -876,6 +876,12 @@ function TimelineScreen(props) {
               if (addrs.length === 0) { alert("No locations with addresses on this day."); return; }
               window.open("https://www.google.com/maps/dir/" + addrs.join("/"), "_blank");
             }} className="text-xs text-blue-400 font-sans border border-blue-500/30 px-3 py-1.5 rounded-full hover:bg-blue-500/10">🗺️ Map</button>
+            <button onClick={function() {
+              var dest = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
+              var day = days[activeDay];
+              var dateStr = day && day.date ? day.date : "";
+              window.open("https://wttr.in/" + encodeURIComponent(dest) + "?format=4&lang=en", "_blank");
+            }} className="text-xs text-sky-400 font-sans border border-sky-500/30 px-3 py-1.5 rounded-full hover:bg-sky-500/10">🌤️ Weather</button>
             <button onClick={function() { onAdd(activeDay); }} className="text-xs text-orange-400 font-sans border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500/10">+ Add Event</button>
           </div>
         </div>
@@ -1049,7 +1055,26 @@ function TimelineScreen(props) {
           </div>
         </div>
       )}
-      <BottomNav active="timeline" go={go} />
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgb(2,6,23)",borderTop:"1px solid rgba(30,41,59,0.8)",display:"flex",alignItems:"center",justifyContent:"space-around",padding:"4px 0 8px",zIndex:50}}>
+        {[
+          {label:"Trips",icon:"🗺️",action:function(){go("dashboard");}},
+          {label:"Timeline",icon:"📅",action:function(){go("timeline");},active:true},
+          {label:"Add",icon:"+",action:function(){addEvent(activeDay);},big:true},
+          {label:"Wishlist",icon:"✨",action:function(){go("wishlist");}},
+          {label:"Glance",icon:"📋",action:function(){go("glance");}},
+          {label:"Settings",icon:"⚙️",action:function(){go("settings");}},
+        ].map(function(item) {
+          if (item.big) return (
+            <button key={item.label} onClick={item.action} style={{width:"52px",height:"52px",borderRadius:"50%",background:"rgb(249,115,22)",border:"none",color:"white",fontSize:"22px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"8px",boxShadow:"0 4px 12px rgba(249,115,22,0.4)"}}>+</button>
+          );
+          return (
+            <button key={item.label} onClick={item.action} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>
+              <span style={{fontSize:"18px"}}>{item.icon}</span>
+              <span style={{fontSize:"9px",fontFamily:"sans-serif",color:item.active?"rgb(249,115,22)":"rgb(100,116,139)"}}>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1392,15 +1417,10 @@ function GlanceScreen(props) {
               {copied ? "✓ Copied!" : "📋 Copy"}
             </button>
             <button onClick={function() {
-              var html = buildHtmlEmail(hideCosts);
-              var blob = new Blob([html], {type:"text/html"});
-              var url = URL.createObjectURL(blob);
-              var win = window.open(url, "_blank");
-              if (!win) {
-                var subject = encodeURIComponent(trip.name + " Itinerary");
-                var body = encodeURIComponent(buildText(hideCosts));
-                window.location.href = "mailto:?subject=" + subject + "&body=" + body;
-              }
+              var text = buildText(hideCosts);
+              var subject = encodeURIComponent(trip.name + " Itinerary");
+              var body = encodeURIComponent(text);
+              window.location.href = "mailto:?subject=" + subject + "&body=" + body;
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
               ✉️ Email
             </button>
@@ -2048,5 +2068,6 @@ export default function MannieTravelsApp() {
  if (screen === "glance")    return <GlanceScreen    go={go} trip={trip} days={days} setActiveDay={setActiveDay} />;
  if (screen === "settings")  return <SettingsScreen  go={go} trip={trip} trips={trips} setTrips={setTrips} activeTripId={activeTripId} />;
  if (screen === "costs")     return <CostsScreen     go={go} trip={trip} days={days} />;
+ if (screen === "wishlist")  return <WishlistScreen  go={go} trip={trip} setTrips={setTrips} />;
   return dashEl;
 }
