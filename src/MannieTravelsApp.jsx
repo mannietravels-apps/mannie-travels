@@ -207,7 +207,7 @@ function BottomNav(props) {
     {label:"Trips", s:"dashboard", icon:"🗺️"},
     {label:"Timeline", s:"timeline", icon:"📅"},
     {label:"Add", s:"addEvent", icon:"➕", primary:true},
-    {label:"Glance", s:"glance", icon:"📋"},
+    {label:"Glance", s:"glance", icon:"📋"},{label:"Wishlist", s:"wishlist", icon:"✨"},
     {label:"Settings", s:"settings", icon:"⚙️"}
   ];
   return (
@@ -822,7 +822,15 @@ function TimelineScreen(props) {
         <div className="absolute bottom-4 left-5 right-5 z-10">
  <div className="flex gap-1 mb-1">{trip.flags.map(function(f, i) { return <span key={i} className="text-xl">{f}</span>; })}</div>
           <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
- <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
+ <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+            <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
+            <button onClick={function() {
+              var dest = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
+              window.open("https://wttr.in/" + encodeURIComponent(dest), "_blank");
+            }} style={{fontSize:"11px",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"9999px",padding:"2px 8px",color:"rgba(255,255,255,0.9)",cursor:"pointer",fontFamily:"sans-serif",whiteSpace:"nowrap"}}>
+              🌤️ Weather
+            </button>
+          </div>
         </div>
       </div>
       <div className="bg-slate-900/95 px-5 py-3 border-b border-slate-800">
@@ -860,7 +868,16 @@ function TimelineScreen(props) {
             <span className={CN25}>{cur.label}</span>
  <span className="text-slate-400 text-sm font-sans ml-2">{fmtFull(cur.date)}</span>
           </div>
- <button onClick={function() { onAdd(activeDay); }} className="text-xs text-orange-400 font-sans border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500/10">+ Add Event</button>
+ <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+            <button onClick={function() {
+              var day = days[activeDay];
+              if (!day) return;
+              var addrs = day.events.filter(function(e) { return e.addr; }).map(function(e) { return encodeURIComponent(e.addr); });
+              if (addrs.length === 0) { alert("No locations with addresses on this day."); return; }
+              window.open("https://www.google.com/maps/dir/" + addrs.join("/"), "_blank");
+            }} className="text-xs text-blue-400 font-sans border border-blue-500/30 px-3 py-1.5 rounded-full hover:bg-blue-500/10">🗺️ Map</button>
+            <button onClick={function() { onAdd(activeDay); }} className="text-xs text-orange-400 font-sans border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500/10">+ Add Event</button>
+          </div>
         </div>
         {cur.events.length === 0 && (
           <div className="text-center py-16">
@@ -1201,7 +1218,7 @@ function DashboardScreen(props) {
  var ms = new Date(nt.end + "T12:00:00") - new Date(nt.start + "T12:00:00");
                   dayCount = Math.max(1, Math.round(ms / 86400000) + 1);
                 }
- var newT = { id: Date.now(), name: nt.name, dests: destArr, start: nt.start || "", end: nt.end || "", tripDays: dayCount, budget: parseInt(nt.budget) || 0, spent: 0, status: "planning", accent: "#f97316", flags: ["🌍"], grad: "from-slate-800 to-slate-700" };
+ var newT = { id: Date.now(), name: nt.name, dests: destArr, start: nt.start || "", end: nt.end || "", tripDays: dayCount, budget: parseInt(nt.budget) || 0, spent: 0, wishlist: [], status: "planning", accent: "#f97316", flags: ["🌍"], grad: "from-slate-800 to-slate-700" };
                 props.addTrip(newT);
                 setShowNew(false);
                 setNT({ name:"", dests:"", start:"", end:"", budget:"" });
@@ -1253,11 +1270,11 @@ function GlanceScreen(props) {
     var lines = [];
     lines.push(trip.name.toUpperCase());
     lines.push(trip.dests.join(", "));
- if (trip.start) lines.push(fmtShort(trip.start) + " to " + fmtShort(trip.end));
+    if (trip.start) lines.push(fmtShort(trip.start) + " to " + fmtShort(trip.end));
     lines.push("");
     for (var di = 0; di < days.length; di++) {
       var day = days[di];
- lines.push("--- " + day.label.toUpperCase() + " | " + fmtFull(day.date) + " ---");
+      lines.push("---- " + day.label.toUpperCase() + " | " + fmtFull(day.date) + " ----");
       if (day.events.length === 0) {
         lines.push("  No events");
       } else {
@@ -1269,22 +1286,75 @@ function GlanceScreen(props) {
           if (ev.arr && ev.type === "Flight") line += " - " + ev.arr;
           if (ev.dur) line += " (" + ev.dur + ")";
           lines.push(line);
-          if (ev.addr) lines.push("     " + ev.addr);
- if (ev.contact) lines.push("     " + ev.contact.name + "  " + ev.contact.phone);
+          if (ev.addr) lines.push("     📍 " + ev.addr);
+          if (ev.contact) lines.push("     📞 " + ev.contact.name + " " + ev.contact.phone);
           if (ev.ref) lines.push("     Ref: " + ev.ref);
           if (ev.aircraft) lines.push("     " + ev.aircraft);
- if (ev.cost > 0 && !hc) lines.push("     Cost: " + sym + ev.cost.toLocaleString() + " " + ev.cur);
-          if (ev.note) lines.push("     Note: " + ev.note);
+          if (ev.cost > 0 && !hc) lines.push("     💰 " + sym + ev.cost.toLocaleString() + " " + ev.cur);
+          if (ev.notes) lines.push("     📝 " + ev.notes);
         }
       }
       lines.push("");
     }
-    var total = days.reduce(function(s,d) {
- return s + d.events.reduce(function(s2,ev) { return s2 + toAUD(ev.cost, ev.cur); }, 0);
-    }, 0);
- if (!hc) lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
+    var total = days.reduce(function(s,d) { return s + d.events.reduce(function(ss,e) { return ss + (e.cost||0); }, 0); }, 0);
+    if (!hc) lines.push("Total spent: A$" + total.toLocaleString() + " / Budget: A$" + trip.budget.toLocaleString());
     return lines.join("\n");
   }
+  function buildHtmlEmail(hc) {
+    var sym = "A$";
+    var rows = "";
+    var grandTotal = 0;
+    for (var di = 0; di < days.length; di++) {
+      var day = days[di];
+      rows += '<tr><td colspan="5" style="background:#1e293b;color:#f97316;font-weight:bold;padding:10px 12px;font-size:14px;border-top:2px solid #f97316">' + day.label + ' &mdash; ' + fmtFull(day.date) + '</td></tr>';
+      if (day.events.length === 0) {
+        rows += '<tr><td colspan="5" style="padding:8px 12px;color:#64748b;font-style:italic">No events planned</td></tr>';
+      } else {
+        for (var ei = 0; ei < day.events.length; ei++) {
+          var ev = day.events[ei];
+          var evSym = SYM[ev.cur] || ev.cur;
+          grandTotal += ev.cost || 0;
+          var timeStr = ev.dep && ev.dep !== "TBD" ? ev.dep : "";
+          if (ev.arr && ev.type === "Flight") timeStr += " &rarr; " + ev.arr;
+          var costStr = ev.cost > 0 && !hc ? evSym + ev.cost.toLocaleString() + " " + ev.cur : "";
+          var details = "";
+          if (ev.dur) details += ev.dur;
+          if (ev.ref) details += (details?" &bull; ":"") + "Ref: " + ev.ref;
+          if (ev.aircraft) details += (details?" &bull; ":"") + ev.aircraft;
+          if (ev.addr) details += (details?"<br>":"") + "📍 " + ev.addr;
+          if (ev.notes) details += (details?"<br>":"") + "📝 " + ev.notes;
+          rows += '<tr style="border-bottom:1px solid #1e293b">' +
+            '<td style="padding:8px 12px;font-size:16px;width:36px">' + ev.icon + '</td>' +
+            '<td style="padding:8px 12px;color:#f1f5f9;font-weight:600;font-size:13px">' + ev.title + '</td>' +
+            '<td style="padding:8px 12px;color:#94a3b8;font-size:12px">' + timeStr + '</td>' +
+            '<td style="padding:8px 12px;color:#94a3b8;font-size:12px">' + details + '</td>' +
+            '<td style="padding:8px 12px;color:#4ade80;font-weight:bold;font-size:13px;text-align:right">' + costStr + '</td>' +
+            '</tr>';
+        }
+      }
+    }
+    var totalRow = !hc ? '<tr><td colspan="4" style="padding:12px;color:#94a3b8;font-size:13px;border-top:2px solid #334155">Total Spent</td><td style="padding:12px;color:#4ade80;font-weight:bold;font-size:15px;text-align:right;border-top:2px solid #334155">A$' + grandTotal.toLocaleString() + '</td></tr>' : '';
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f172a;font-family:Georgia,serif">' +
+      '<div style="max-width:680px;margin:0 auto;padding:24px">' +
+      '<div style="background:#1e293b;border-radius:12px;padding:20px 24px;margin-bottom:16px">' +
+      '<h1 style="color:#f97316;font-size:24px;margin:0 0 4px">' + trip.name + '</h1>' +
+      '<p style="color:#94a3b8;margin:0;font-size:14px">' + trip.dests.join(" &bull; ") + '</p>' +
+      (trip.start ? '<p style="color:#94a3b8;margin:4px 0 0;font-size:13px">' + fmtShort(trip.start) + ' &ndash; ' + fmtShort(trip.end) + ' &bull; ' + days.length + ' days</p>' : '') +
+      '</div>' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:12px;overflow:hidden;border:1px solid #1e293b">' +
+      '<thead><tr style="background:#1e293b">' +
+      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left;width:36px"></th>' +
+      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left">EVENT</th>' +
+      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left">TIME</th>' +
+      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left">DETAILS</th>' +
+      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:right">' + (!hc ? 'COST' : '') + '</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + totalRow + '</tbody>' +
+      '</table>' +
+      '<p style="color:#475569;font-size:11px;text-align:center;margin-top:16px">Generated by Mannie Travels</p>' +
+      '</div></body></html>';
+  }
+
   var stHideCosts = useState(false);
   var hideCosts = stHideCosts[0]; var setHideCosts = stHideCosts[1];
   var stCopied = useState(false);
@@ -1322,10 +1392,15 @@ function GlanceScreen(props) {
               {copied ? "✓ Copied!" : "📋 Copy"}
             </button>
             <button onClick={function() {
-              var text = buildText(hideCosts);
-              var subject = encodeURIComponent(trip.name + " Itinerary");
-              var body = encodeURIComponent(text);
-              window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+              var html = buildHtmlEmail(hideCosts);
+              var blob = new Blob([html], {type:"text/html"});
+              var url = URL.createObjectURL(blob);
+              var win = window.open(url, "_blank");
+              if (!win) {
+                var subject = encodeURIComponent(trip.name + " Itinerary");
+                var body = encodeURIComponent(buildText(hideCosts));
+                window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+              }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
               ✉️ Email
             </button>
@@ -1705,6 +1780,168 @@ function CostsScreen(props) {
     </div>
   );
 }
+
+function WishlistScreen(props) {
+  var trip = props.trip;
+  var setTrips = props.setTrips;
+  var go = props.go;
+  var items = trip.wishlist || [];
+
+  var WISH_CATS = [
+    {id:"restaurant",label:"Restaurant",icon:"🍽️"},
+    {id:"bar",label:"Bar / Cafe",icon:"🍸"},
+    {id:"attraction",label:"Attraction",icon:"🎡"},
+    {id:"sightseeing",label:"Sightseeing",icon:"🗺️"},
+    {id:"activity",label:"Activity",icon:"🎭"},
+    {id:"shopping",label:"Shopping",icon:"🛍️"},
+    {id:"beach",label:"Beach",icon:"🏖️"},
+    {id:"hotel",label:"Accommodation",icon:"🏨"},
+    {id:"other",label:"Other",icon:"📌"},
+  ];
+
+  var stShowAdd = React.useState(false);
+  var showAdd = stShowAdd[0]; var setShowAdd = stShowAdd[1];
+  var stName = React.useState("");
+  var name = stName[0]; var setName = stName[1];
+  var stCat = React.useState("restaurant");
+  var cat = stCat[0]; var setCat = stCat[1];
+  var stNotes = React.useState("");
+  var notes = stNotes[0]; var setNotes = stNotes[1];
+  var stAddr = React.useState("");
+  var addr = stAddr[0]; var setAddr = stAddr[1];
+  var stFilter = React.useState("all");
+  var filter = stFilter[0]; var setFilter = stFilter[1];
+
+  function save() {
+    if (!name.trim()) return;
+    var item = {id: Date.now(), name: name.trim(), cat: cat, notes: notes.trim(), addr: addr.trim(), done: false};
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== trip.id) return t;
+        return Object.assign({}, t, {wishlist: (t.wishlist || []).concat([item])});
+      });
+    });
+    setName(""); setNotes(""); setAddr(""); setShowAdd(false);
+  }
+
+  function toggle(id) {
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== trip.id) return t;
+        return Object.assign({}, t, {wishlist: (t.wishlist || []).map(function(w) {
+          return w.id === id ? Object.assign({}, w, {done: !w.done}) : w;
+        })});
+      });
+    });
+  }
+
+  function remove(id) {
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== trip.id) return t;
+        return Object.assign({}, t, {wishlist: (t.wishlist || []).filter(function(w) { return w.id !== id; })});
+      });
+    });
+  }
+
+  var catMap = {};
+  WISH_CATS.forEach(function(c) { catMap[c.id] = c; });
+
+  var filtered = filter === "all" ? items : filter === "done" ? items.filter(function(w) { return w.done; }) : items.filter(function(w) { return w.cat === filter && !w.done; });
+
+  return (
+    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column"}}>
+      <div style={{background:"linear-gradient(to bottom, rgb(15,23,42), rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
+          <button onClick={function() { go("timeline"); }} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
+          <button onClick={function() { setShowAdd(true); }} style={{background:"rgb(249,115,22)",border:"none",borderRadius:"12px",padding:"8px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"bold"}}>+ Add</button>
+        </div>
+        <div style={{marginTop:"8px"}}>
+          <p style={{color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 2px"}}>{trip.name}</p>
+          <h1 style={{color:"white",fontSize:"22px",fontFamily:"Georgia,serif",fontWeight:"bold",margin:0}}>Wish List</h1>
+          <p style={{color:"rgb(100,116,139)",fontSize:"12px",fontFamily:"sans-serif",margin:"4px 0 0"}}>{items.filter(function(w){return !w.done;}).length} to do &bull; {items.filter(function(w){return w.done;}).length} done</p>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 100px"}}>
+        {/* Filter tabs */}
+        <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px"}}>
+          {[{id:"all",label:"All",icon:"✨"}].concat(WISH_CATS).concat([{id:"done",label:"Done",icon:"✅"}]).map(function(c) {
+            var isActive = filter === c.id;
+            return (
+              <button key={c.id} onClick={function() { setFilter(c.id); }}
+                style={{fontSize:"11px",padding:"4px 10px",borderRadius:"9999px",border:"1px solid",fontFamily:"sans-serif",cursor:"pointer",
+                  background:isActive?"rgb(249,115,22)":"rgba(30,41,59,0.8)",
+                  borderColor:isActive?"rgb(234,88,12)":"rgba(71,85,105,0.5)",
+                  color:isActive?"white":"rgb(148,163,184)"}}>
+                {c.icon} {c.label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Add form */}
+        {showAdd && (
+          <div style={{background:"rgba(30,41,59,0.9)",border:"1px solid rgba(71,85,105,0.5)",borderRadius:"16px",padding:"16px",marginBottom:"16px"}}>
+            <p style={{color:"white",fontFamily:"sans-serif",fontWeight:"bold",fontSize:"14px",margin:"0 0 12px"}}>Add to Wish List</p>
+            <input value={name} onChange={function(e) { setName(e.target.value); }} placeholder="Place or activity name *"
+              style={{width:"100%",background:"rgba(15,23,42,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",boxSizing:"border-box",marginBottom:"8px",outline:"none"}} />
+            <select value={cat} onChange={function(e) { setCat(e.target.value); }}
+              style={{width:"100%",background:"rgba(15,23,42,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",boxSizing:"border-box",marginBottom:"8px",outline:"none"}}>
+              {WISH_CATS.map(function(c) { return <option key={c.id} value={c.id}>{c.icon} {c.label}</option>; })}
+            </select>
+            <input value={addr} onChange={function(e) { setAddr(e.target.value); }} placeholder="Address or area (optional)"
+              style={{width:"100%",background:"rgba(15,23,42,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",boxSizing:"border-box",marginBottom:"8px",outline:"none"}} />
+            <textarea value={notes} onChange={function(e) { setNotes(e.target.value); }} placeholder="Notes, opening hours, why you want to go..."
+              rows={2} style={{width:"100%",background:"rgba(15,23,42,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",boxSizing:"border-box",marginBottom:"12px",outline:"none",resize:"none"}} />
+            <div style={{display:"flex",gap:"8px"}}>
+              <button onClick={function() { setShowAdd(false); setName(""); setNotes(""); setAddr(""); }}
+                style={{flex:1,padding:"10px",background:"transparent",border:"1px solid rgba(71,85,105,0.5)",borderRadius:"10px",color:"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer"}}>Cancel</button>
+              <button onClick={save} disabled={!name.trim()}
+                style={{flex:2,padding:"10px",background:"rgb(249,115,22)",border:"none",borderRadius:"10px",color:"white",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"bold",opacity:name.trim()?1:0.5}}>Save</button>
+            </div>
+          </div>
+        )}
+        {/* Items list */}
+        {filtered.length === 0 && (
+          <div style={{textAlign:"center",padding:"48px 0",color:"rgb(71,85,105)"}}>
+            <div style={{fontSize:"48px",marginBottom:"12px"}}>✨</div>
+            <p style={{fontFamily:"sans-serif",fontSize:"14px"}}>Nothing here yet</p>
+            <p style={{fontFamily:"sans-serif",fontSize:"12px",marginTop:"4px"}}>Tap + Add to start your wish list</p>
+          </div>
+        )}
+        {filtered.map(function(w) {
+          var c = catMap[w.cat] || {icon:"📌",label:"Other"};
+          return (
+            <div key={w.id} style={{background:w.done?"rgba(16,185,129,0.05)":"rgba(30,41,59,0.6)",border:"1px solid",borderColor:w.done?"rgba(16,185,129,0.2)":"rgba(71,85,105,0.4)",borderRadius:"14px",padding:"14px",marginBottom:"10px",opacity:w.done?0.7:1}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:"12px"}}>
+                <button onClick={function() { toggle(w.id); }}
+                  style={{width:"22px",height:"22px",borderRadius:"50%",border:"2px solid",borderColor:w.done?"rgb(16,185,129)":"rgba(71,85,105,0.6)",background:w.done?"rgb(16,185,129)":"transparent",cursor:"pointer",flexShrink:0,marginTop:"1px",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px"}}>
+                  {w.done ? "✓" : ""}
+                </button>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px"}}>
+                    <span style={{fontSize:"14px"}}>{c.icon}</span>
+                    <span style={{color:w.done?"rgb(16,185,129)":"white",fontFamily:"sans-serif",fontWeight:"600",fontSize:"14px",textDecoration:w.done?"line-through":"none"}}>{w.name}</span>
+                    <span style={{fontSize:"10px",color:"rgb(100,116,139)",fontFamily:"sans-serif",background:"rgba(71,85,105,0.3)",padding:"1px 6px",borderRadius:"9999px"}}>{c.label}</span>
+                  </div>
+                  {w.addr && (
+                    <button onClick={function() { window.open("https://www.google.com/maps/search/" + encodeURIComponent(w.addr), "_blank"); }}
+                      style={{background:"none",border:"none",padding:0,cursor:"pointer",textAlign:"left"}}>
+                      <span style={{fontSize:"11px",color:"rgb(96,165,250)",fontFamily:"sans-serif"}}>📍 {w.addr}</span>
+                    </button>
+                  )}
+                  {w.notes && <p style={{color:"rgb(148,163,184)",fontFamily:"sans-serif",fontSize:"12px",margin:"4px 0 0"}}>{w.notes}</p>}
+                </div>
+                <button onClick={function() { remove(w.id); }}
+                  style={{background:"none",border:"none",cursor:"pointer",color:"rgb(71,85,105)",fontSize:"16px",padding:"2px"}}>×</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function MannieTravelsApp() {
   var stScreen = useState("dashboard");
   var screen = stScreen[0]; var setScreen = stScreen[1];
