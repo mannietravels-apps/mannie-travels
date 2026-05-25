@@ -220,7 +220,7 @@ function BottomNav(props) {
  ? "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans text-orange-400"
  : "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans text-slate-500 hover:text-slate-300";
           return (
- <button key={it.s} onClick={function() { go(it.s); }} className={cls}>
+ <button key={it.s} onClick={(function(s) { return function() { go(s); }; })(it.s)} className={cls}>
               <span className="text-xl">{it.icon}</span>
               <span className="text-xs">{it.label}</span>
             </button>
@@ -824,12 +824,7 @@ function TimelineScreen(props) {
           <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
  <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
             <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
-            <button onClick={function() {
-              var dest = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
-              window.open("https://www.timeanddate.com/weather/" + encodeURIComponent(dest.toLowerCase().replace(/ /g,"-")) + "/ext", "_blank");
-            }} style={{fontSize:"11px",background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"9999px",padding:"2px 8px",color:"rgba(255,255,255,0.9)",cursor:"pointer",fontFamily:"sans-serif",whiteSpace:"nowrap"}}>
-              🌤️ Weather
-            </button>
+
           </div>
         </div>
       </div>
@@ -877,10 +872,18 @@ function TimelineScreen(props) {
               window.open("https://www.google.com/maps/dir/" + addrs.join("/"), "_blank");
             }} className="text-xs text-blue-400 font-sans border border-blue-500/30 px-3 py-1.5 rounded-full hover:bg-blue-500/10">🗺️ Map</button>
             <button onClick={function() {
-              var dest = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
               var day = days[activeDay];
-              var dateStr = day && day.date ? day.date : "";
-              window.open("https://wttr.in/" + encodeURIComponent(dest) + "?format=4&lang=en", "_blank");
+              var city = "";
+              if (day && day.events.length > 0) {
+                for (var ei = 0; ei < day.events.length; ei++) {
+                  var ev = day.events[ei];
+                  if (ev.type === "Hotel" && ev.addr) { city = ev.addr.split(",").slice(-2,-1)[0] || ""; break; }
+                  if (ev.aCity) { city = ev.aCity; break; }
+                }
+              }
+              if (!city) city = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
+              city = city.trim();
+              window.open("https://wttr.in/" + encodeURIComponent(city) + "?format=v2", "_blank");
             }} className="text-xs text-sky-400 font-sans border border-sky-500/30 px-3 py-1.5 rounded-full hover:bg-sky-500/10">🌤️ Weather</button>
             <button onClick={function() { onAdd(activeDay); }} className="text-xs text-orange-400 font-sans border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500/10">+ Add Event</button>
           </div>
@@ -1417,10 +1420,19 @@ function GlanceScreen(props) {
               {copied ? "✓ Copied!" : "📋 Copy"}
             </button>
             <button onClick={function() {
+              var html = buildHtmlEmail(hideCosts);
+              var subject = trip.name + " Itinerary";
               var text = buildText(hideCosts);
-              var subject = encodeURIComponent(trip.name + " Itinerary");
-              var body = encodeURIComponent(text);
-              window.location.href = "mailto:?subject=" + subject + "&body=" + body;
+              var newWin = window.open("", "_blank");
+              if (newWin) {
+                var shareBtn = '<div style="position:fixed;top:0;left:0;right:0;background:#1e293b;padding:12px 16px;display:flex;gap:8px;align-items:center;z-index:999">' +
+                  '<a href="mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text) + '" style="background:#f97316;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:bold">✉️ Send Email</a>' +
+                  '<button onclick="window.print()" style="background:#334155;color:white;padding:8px 16px;border-radius:8px;border:none;font-family:sans-serif;font-size:14px;cursor:pointer">🖨️ Print</button>' +
+                  '<button onclick="window.close()" style="background:transparent;color:#94a3b8;padding:8px 12px;border-radius:8px;border:1px solid #475569;font-family:sans-serif;font-size:14px;cursor:pointer">✕ Close</button>' +
+                  '</div><div style="margin-top:56px">';
+                newWin.document.write(shareBtn + html + '</div>');
+                newWin.document.close();
+              }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
               ✉️ Email
             </button>
@@ -1819,17 +1831,17 @@ function WishlistScreen(props) {
     {id:"other",label:"Other",icon:"📌"},
   ];
 
-  var stShowAdd = React.useState(false);
+  var stShowAdd = useState(false);
   var showAdd = stShowAdd[0]; var setShowAdd = stShowAdd[1];
-  var stName = React.useState("");
+  var stName = useState("");
   var name = stName[0]; var setName = stName[1];
-  var stCat = React.useState("restaurant");
+  var stCat = useState("restaurant");
   var cat = stCat[0]; var setCat = stCat[1];
-  var stNotes = React.useState("");
+  var stNotes = useState("");
   var notes = stNotes[0]; var setNotes = stNotes[1];
-  var stAddr = React.useState("");
+  var stAddr = useState("");
   var addr = stAddr[0]; var setAddr = stAddr[1];
-  var stFilter = React.useState("all");
+  var stFilter = useState("all");
   var filter = stFilter[0]; var setFilter = stFilter[1];
 
   function save() {
