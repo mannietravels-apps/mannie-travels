@@ -874,25 +874,27 @@ function TimelineScreen(props) {
               window.open("https://www.google.com/maps/dir/" + addrs.join("/"), "_blank");
             }} className="text-xs text-blue-400 font-sans border border-blue-500/30 px-3 py-1.5 rounded-full hover:bg-blue-500/10">🗺️ Map</button>
             <button onClick={function() {
-              var day = days[activeDay];
               var city = "";
-              if (day && day.events.length > 0) {
-                for (var ei = 0; ei < day.events.length; ei++) {
-                  var ev = day.events[ei];
+              var di = activeDay;
+              for (var d = di; d >= 0 && !city; d--) {
+                var dayEvs = days[d] ? days[d].events : [];
+                for (var ei = 0; ei < dayEvs.length; ei++) {
+                  var ev = dayEvs[ei];
                   if (ev.type === "Hotel" && ev.addr) {
-                    var parts = ev.addr.split(",");
-                    city = parts.length > 2 ? parts[parts.length-2].trim() : parts[0].trim();
+                    var pts = ev.addr.split(",");
+                    city = pts.length > 2 ? pts[pts.length-2].trim() : pts[0].trim();
                     break;
                   }
-                  if (ev.aCity && ev.aCity !== "") { city = ev.aCity; break; }
                   if (ev.type === "Flight" && ev.aCity) { city = ev.aCity; break; }
-                  if (ev.dCity && activeDay === 0) { city = ev.dCity; break; }
+                  if (ev.type === "Ferry" && ev.aCity) { city = ev.aCity; break; }
+                  if (ev.type === "Train" && ev.aCity) { city = ev.aCity; break; }
                 }
               }
-              if (!city && day && day.date) {
-                var dayIdx = activeDay;
-                var dest = trip.dests && trip.dests[dayIdx] ? trip.dests[dayIdx] : (trip.dests && trip.dests[0] ? trip.dests[0] : trip.name);
-                city = dest;
+              if (!city && activeDay === 0) {
+                var day0 = days[0] ? days[0].events : [];
+                for (var ei2 = 0; ei2 < day0.length; ei2++) {
+                  if (day0[ei2].dCity) { city = day0[ei2].dCity; break; }
+                }
               }
               if (!city) city = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
               city = city.trim();
