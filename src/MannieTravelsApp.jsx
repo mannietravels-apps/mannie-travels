@@ -206,27 +206,29 @@ function BottomNav(props) {
   var items = [
     {label:"Trips", s:"dashboard", icon:"🗺️"},
     {label:"Timeline", s:"timeline", icon:"📅"},
-    {label:"Add", s:"addEvent", icon:"➕", primary:true},
+    {label:"Add", s:"addEvent", icon:"+", primary:true},
+    {label:"Wishlist", s:"wishlist", icon:"✨"},
     {label:"Glance", s:"glance", icon:"📋"},
     {label:"Settings", s:"settings", icon:"⚙️"}
   ];
   return (
-    <div className="bg-slate-900 border-t border-slate-800 px-2 pb-2 pt-1">
-      <div className="flex justify-around max-w-lg mx-auto">
-        {items.map(function(it) {
-          var cls = it.primary
- ? "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans bg-orange-500 text-white -mt-4 shadow-lg"
-            : active === it.s
- ? "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans text-orange-400"
- : "flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl font-sans text-slate-500 hover:text-slate-300";
-          return (
- <button key={it.s} onClick={(function(s) { return function() { go(s); }; })(it.s)} className={cls}>
-              <span className="text-xl">{it.icon}</span>
-              <span className="text-xs">{it.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgb(2,6,23)",borderTop:"1px solid rgba(30,41,59,0.8)",display:"flex",alignItems:"center",justifyContent:"space-around",padding:"4px 0 8px",zIndex:100}}>
+      {items.map(function(it) {
+        var isActive = active === it.s;
+        if (it.primary) return (
+          <button key={it.s} onClick={(function(s){return function(){go(s);};})(it.s)}
+            style={{width:"48px",height:"48px",borderRadius:"50%",background:"rgb(249,115,22)",border:"none",color:"white",fontSize:"24px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"8px",boxShadow:"0 4px 12px rgba(249,115,22,0.5)",fontWeight:"bold"}}>
+            +
+          </button>
+        );
+        return (
+          <button key={it.s} onClick={(function(s){return function(){go(s);};})(it.s)}
+            style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",padding:"4px 6px"}}>
+            <span style={{fontSize:"18px"}}>{it.icon}</span>
+            <span style={{fontSize:"9px",fontFamily:"sans-serif",color:isActive?"rgb(249,115,22)":"rgb(100,116,139)"}}>{it.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -883,7 +885,7 @@ function TimelineScreen(props) {
               }
               if (!city) city = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
               city = city.trim();
-              window.open("https://wttr.in/" + encodeURIComponent(city) + "?format=v2", "_blank");
+              window.open("https://www.google.com/search?q=weather+" + encodeURIComponent(city), "_blank");
             }} className="text-xs text-sky-400 font-sans border border-sky-500/30 px-3 py-1.5 rounded-full hover:bg-sky-500/10">🌤️ Weather</button>
             <button onClick={function() { onAdd(activeDay); }} className="text-xs text-orange-400 font-sans border border-orange-500/30 px-3 py-1.5 rounded-full hover:bg-orange-500/10">+ Add Event</button>
           </div>
@@ -1058,26 +1060,8 @@ function TimelineScreen(props) {
           </div>
         </div>
       )}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgb(2,6,23)",borderTop:"1px solid rgba(30,41,59,0.8)",display:"flex",alignItems:"center",justifyContent:"space-around",padding:"4px 0 8px",zIndex:50}}>
-        {[
-          {label:"Trips",icon:"🗺️",action:function(){go("dashboard");}},
-          {label:"Timeline",icon:"📅",action:function(){go("timeline");},active:true},
-          {label:"Add",icon:"+",action:function(){addEvent(activeDay);},big:true},
-          {label:"Wishlist",icon:"✨",action:function(){go("wishlist");}},
-          {label:"Glance",icon:"📋",action:function(){go("glance");}},
-          {label:"Settings",icon:"⚙️",action:function(){go("settings");}},
-        ].map(function(item) {
-          if (item.big) return (
-            <button key={item.label} onClick={item.action} style={{width:"52px",height:"52px",borderRadius:"50%",background:"rgb(249,115,22)",border:"none",color:"white",fontSize:"22px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:"8px",boxShadow:"0 4px 12px rgba(249,115,22,0.4)"}}>+</button>
-          );
-          return (
-            <button key={item.label} onClick={item.action} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",padding:"4px 8px"}}>
-              <span style={{fontSize:"18px"}}>{item.icon}</span>
-              <span style={{fontSize:"9px",fontFamily:"sans-serif",color:item.active?"rgb(249,115,22)":"rgb(100,116,139)"}}>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <div style={{height:"72px"}} />
+      <BottomNav active="timeline" go={go} />
     </div>
   );
 }
@@ -1274,7 +1258,7 @@ function DashboardScreen(props) {
           </div>
         </div>
       )}
-      <BottomNav active="dashboard" go={go} />
+      <div style={{height:"72px"}} /><BottomNav active="dashboard" go={go} />
     </div>
   );
 }
@@ -1560,7 +1544,7 @@ function GlanceScreen(props) {
           </div>
         )}
       </div>
-      <BottomNav active="glance" go={go} />
+      <div style={{height:"72px"}} /><BottomNav active="glance" go={go} />
     </div>
   );
 }
@@ -1666,7 +1650,7 @@ function SettingsScreen(props) {
           {saved ? "✓  Saved!" : "💾  Save Changes"}
         </button>
       </div>
-      <BottomNav active="settings" go={go} />
+      <div style={{height:"72px"}} /><BottomNav active="settings" go={go} />
     </div>
   );
 }
@@ -1808,7 +1792,7 @@ function CostsScreen(props) {
           </div>
         )}
       </div>
-      <BottomNav active="" go={go} />
+      <div style={{height:"72px"}} /><BottomNav active="" go={go} />
     </div>
   );
 }
@@ -1820,9 +1804,9 @@ function WishlistScreen(props) {
   var items = trip.wishlist || [];
 
   var WISH_CATS = [
-    {id:"restaurant",label:"Restaurant",icon:"🍽️"},
-    {id:"bar",label:"Bar / Cafe",icon:"🍸"},
-    {id:"attraction",label:"Attraction",icon:"🎡"},
+    {id:"restaurant",label:"Restaurant / Cafe",icon:"🍽️"},
+    {id:"bar",label:"Bar / Club",icon:"🍸"},
+    {id:"attraction",label:"Attraction / Tour",icon:"🎡"},
     {id:"sightseeing",label:"Sightseeing",icon:"🗺️"},
     {id:"activity",label:"Activity",icon:"🎭"},
     {id:"shopping",label:"Shopping",icon:"🛍️"},
@@ -1901,7 +1885,7 @@ function WishlistScreen(props) {
             var isActive = filter === c.id;
             return (
               <button key={c.id} onClick={function() { setFilter(c.id); }}
-                style={{fontSize:"11px",padding:"4px 10px",borderRadius:"9999px",border:"1px solid",fontFamily:"sans-serif",cursor:"pointer",
+                style={{fontSize:"12px",padding:"6px 12px",borderRadius:"9999px",border:"1px solid",fontFamily:"sans-serif",cursor:"pointer",
                   background:isActive?"rgb(249,115,22)":"rgba(30,41,59,0.8)",
                   borderColor:isActive?"rgb(234,88,12)":"rgba(71,85,105,0.5)",
                   color:isActive?"white":"rgb(148,163,184)"}}>
@@ -1969,7 +1953,8 @@ function WishlistScreen(props) {
             </div>
           );
         })}
-      </div>
+      <div style={{height:"72px"}} />
+      <BottomNav active="wishlist" go={go} />
     </div>
   );
 }
