@@ -471,7 +471,9 @@ function AddEditScreen(props) {
       cur: cur.code,
       aircraft: plane || null,
       note: note || "",
-      docs: docs
+      docs: docs,
+      dCity: lkRes ? lkRes.dCity : null,
+      aCity: lkRes ? lkRes.aCity : null
     };
     onSave(selDayRef.current, event, isEdit);
     setSaved(true);
@@ -890,10 +892,16 @@ function TimelineScreen(props) {
                   if (ev.type === "Train" && ev.aCity) { city = ev.aCity; break; }
                 }
               }
-              if (!city && activeDay === 0) {
-                var day0 = days[0] ? days[0].events : [];
-                for (var ei2 = 0; ei2 < day0.length; ei2++) {
-                  if (day0[ei2].dCity) { city = day0[ei2].dCity; break; }
+              if (!city) {
+                var allEvs = days[activeDay] ? days[activeDay].events : [];
+                for (var ei2 = 0; ei2 < allEvs.length; ei2++) {
+                  var ev2 = allEvs[ei2];
+                  if (ev2.dCity) { city = ev2.dCity; break; }
+                  if (ev2.addr) {
+                    var addrParts = ev2.addr.split(",");
+                    city = addrParts.length > 1 ? addrParts[0].trim() : ev2.addr.trim();
+                    break;
+                  }
                 }
               }
               if (!city) city = trip.dests && trip.dests[0] ? trip.dests[0] : trip.name;
