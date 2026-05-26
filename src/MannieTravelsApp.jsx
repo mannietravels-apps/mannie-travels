@@ -254,7 +254,7 @@ function PhotoEntry(props) {
   return (
     <label style={{cursor:"pointer",display:"inline-block"}}>
       <span style={{background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"9999px",padding:"6px 12px",color:"white",fontSize:"12px",fontFamily:"sans-serif",display:"inline-block"}}>
-        📷 {currentPhoto ? "Change Photo" : "Add Photo"}
+        📷 {"📷"}
       </span>
       <input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}} />
     </label>
@@ -488,7 +488,8 @@ function AddEditScreen(props) {
  ? "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-slate-700 text-slate-500 cursor-not-allowed"
  : "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-orange-500 hover:bg-orange-400 text-white";
   return (
-    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}} style={{position:"relative"}}>
+      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
  <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 px-5 pb-4 border-b border-slate-800/60">
         <div className={CN8}>
  <button onClick={function() { go("timeline"); }} className="shrink-0 bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-sm px-3 py-1.5 rounded-xl font-sans">Back</button>
@@ -810,7 +811,8 @@ function TimelineScreen(props) {
   }
  var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
   return (
-    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}} style={{position:"relative"}}>
+      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
       <div className="relative" style={{height:"200px"}}>
         {trip.photo ? (
           <img src={trip.photo} alt="" className="w-full h-full object-cover" />
@@ -824,7 +826,7 @@ function TimelineScreen(props) {
  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/10 to-transparent" />
  <button onClick={function() { go("dashboard"); }} className="absolute top-12 left-4 bg-black/50 text-white text-xs px-3 py-1.5 rounded-full border border-white/20 font-sans z-10">Back</button>
         <div className="absolute bottom-4 left-5 right-5 z-10">
- <div className="flex gap-1 mb-1">{trip.flags.map(function(f, i) { return <span key={i} className="text-xl">{f}</span>; })}</div>
+
           <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
  <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
             <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
@@ -1106,7 +1108,8 @@ function DashboardScreen(props) {
     setNT(next);
   }
   return (
-    <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
+    <div className={CN3} style={{fontFamily:"Georgia,serif"}} style={{position:"relative"}}>
+      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
  <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 pb-4 px-5">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -1147,7 +1150,7 @@ function DashboardScreen(props) {
  <PhotoEntry tripId={trip.id} currentPhoto={trip.photo} setTrips={setTrips} trips={trips} />
                 </div>
                 <div className="absolute bottom-4 left-5 right-16 z-10">
- <div className="flex gap-1 mb-1">{trip.flags.map(function(f, i) { return <span key={i} className="text-xl">{f}</span>; })}</div>
+
                   <h2 className={CN13}>{trip.name}</h2>
  <p className="text-orange-300 text-sm font-sans">{trip.dests.join(", ")}</p>
                 </div>
@@ -1214,7 +1217,7 @@ function DashboardScreen(props) {
       </div>
       {showNew && (
  <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end">
- <div className="w-full bg-slate-900 rounded-t-3xl border-t border-slate-700 p-6 space-y-4 max-h-screen overflow-y-auto">
+ <div className="w-full bg-slate-900 rounded-t-3xl border-t border-slate-700 p-4 space-y-3" style={{maxHeight:"75vh",overflowY:"auto",paddingBottom:"80px"}}>
             <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-2" />
             <h2 className={CN13}>New Trip</h2>
             <div className="space-y-3 font-sans">
@@ -1251,7 +1254,7 @@ function DashboardScreen(props) {
  var ms = new Date(nt.end + "T12:00:00") - new Date(nt.start + "T12:00:00");
                   dayCount = Math.max(1, Math.round(ms / 86400000) + 1);
                 }
- var newT = { id: Date.now(), name: nt.name, dests: destArr, start: nt.start || "", end: nt.end || "", tripDays: dayCount, budget: parseInt(nt.budget) || 0, spent: 0, wishlist: [], status: "planning", accent: "#f97316", flags: ["🌍"], grad: "from-slate-800 to-slate-700" };
+ var newT = { id: Date.now(), name: nt.name, dests: destArr, start: nt.start || "", end: nt.end || "", tripDays: dayCount, budget: parseInt(nt.budget) || 0, spent: 0, wishlist: [], status: "planning", accent: "#f97316", flags: [], grad: "from-slate-800 to-slate-700" };
                 props.addTrip(newT);
                 setShowNew(false);
                 setNT({ name:"", dests:"", start:"", end:"", budget:"" });
@@ -1339,7 +1342,9 @@ function GlanceScreen(props) {
     var grandTotal = 0;
     for (var di = 0; di < days.length; di++) {
       var day = days[di];
-      rows += '<tr><td colspan="5" style="background:#1e293b;color:#f97316;font-weight:bold;padding:10px 12px;font-size:14px;border-top:2px solid #f97316">' + day.label + ' &mdash; ' + fmtFull(day.date) + '</td></tr>';
+      var dayColors = ["#f97316","#3b82f6","#8b5cf6","#10b981","#ec4899","#f59e0b","#06b6d4","#84cc16","#ef4444","#6366f1","#14b8a6","#f97316","#3b82f6","#8b5cf6","#10b981","#ec4899"];
+              var dc = dayColors[di % dayColors.length];
+              rows += '<tr><td colspan="5" style="background:rgba(' + (di%2===0?'30,41,59':'15,23,42') + ',0.9);color:' + dc + ';font-weight:bold;padding:10px 12px;font-size:14px;border-top:2px solid ' + dc + '">' + day.label + ' &mdash; ' + fmtFull(day.date) + '</td></tr>';
       if (day.events.length === 0) {
         rows += '<tr><td colspan="5" style="padding:8px 12px;color:#64748b;font-style:italic">No events planned</td></tr>';
       } else {
@@ -1421,9 +1426,7 @@ function GlanceScreen(props) {
               style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid",background:hideCosts?"rgba(245,158,11,0.2)":"rgba(30,41,59,0.8)",borderColor:hideCosts?"rgba(245,158,11,0.4)":"rgba(71,85,105,0.7)",color:hideCosts?"rgb(252,211,77)":"rgb(148,163,184)"}}>
               {hideCosts ? "💰 Costs Hidden" : "💰 Hide Costs"}
             </button>
-            <button onClick={handleCopy} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:copied?"rgba(16,185,129,0.2)":"rgba(30,41,59,0.8)",color:copied?"rgb(110,231,183)":"rgb(148,163,184)"}}>
-              {copied ? "✓ Copied!" : "📋 Copy"}
-            </button>
+
             <button onClick={function() {
               var html = buildHtmlEmail(hideCosts);
               var subject = trip.name + " Itinerary";
@@ -1490,18 +1493,24 @@ function GlanceScreen(props) {
           var hasEvents = day.events.length > 0;
           return (
  <div key={day.id} className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden">
-              <button
+              {(function() {
+                var glanceColors=["#f97316","#3b82f6","#8b5cf6","#10b981","#ec4899","#f59e0b","#06b6d4","#84cc16","#ef4444","#6366f1"];
+                var gc=glanceColors[di%glanceColors.length];
+                return (
+                <button
                 onClick={function() { setActiveDay(di); go("timeline"); }}
- className="w-full flex items-center justify-between px-4 py-3 bg-slate-800/40 border-b border-slate-800/60 hover:bg-slate-700/40 transition-colors text-left">
+                style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",background:"rgba(30,41,59,0.6)",borderBottom:"1px solid rgba(30,41,59,0.6)",borderLeft:"3px solid "+gc,textAlign:"left",border:"none",cursor:"pointer"}}>
                 <div>
-                  <span className={CN25}>{day.label}</span>
+                  <span style={{color:gc,fontFamily:"sans-serif",fontWeight:"bold",fontSize:"14px"}}>{day.label}</span>
  <span className="text-slate-400 text-sm font-sans ml-2">{fmtFull(day.date)}</span>
                 </div>
                 <div className={CN7}>
  <span className={CN6}>{day.events.length} event{day.events.length !== 1 ? "s" : ""}</span>
- <span className="text-orange-400 text-xs font-sans">Open →</span>
+                  <span style={{color:gc,fontSize:"12px",fontFamily:"sans-serif"}}>Open →</span>
                 </div>
               </button>
+                );
+              })()}
               {!hasEvents ? (
  <div className="px-4 py-3 text-slate-600 text-sm font-sans italic">No events</div>
               ) : (
@@ -1887,7 +1896,8 @@ function WishlistScreen(props) {
   var filtered = filter === "all" ? items : filter === "done" ? items.filter(function(w) { return w.done; }) : items.filter(function(w) { return w.cat === filter && !w.done; });
 
   return (
-    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column",position:"relative"}}>
+      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
       <div style={{background:"linear-gradient(to bottom, rgb(15,23,42), rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
           <button onClick={function() { go("timeline"); }} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
@@ -1905,7 +1915,7 @@ function WishlistScreen(props) {
           {[{id:"all",label:"All",icon:"✨"}].concat(WISH_CATS).concat([{id:"done",label:"Done",icon:"✅"}]).map(function(c) {
             var isActive = filter === c.id;
             return (
-              <button key={c.id} onClick={function() { setFilter(c.id); }}
+              <button key={c.id} onClick={(function(id) { return function() { setFilter(id); }; })(c.id)}
                 style={{fontSize:"12px",padding:"6px 12px",borderRadius:"9999px",border:"1px solid",fontFamily:"sans-serif",cursor:"pointer",
                   background:isActive?"rgb(249,115,22)":"rgba(30,41,59,0.8)",
                   borderColor:isActive?"rgb(234,88,12)":"rgba(71,85,105,0.5)",
