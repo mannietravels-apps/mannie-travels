@@ -488,7 +488,7 @@ function AddEditScreen(props) {
  ? "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-slate-700 text-slate-500 cursor-not-allowed"
  : "flex-[2] py-3.5 rounded-2xl font-semibold font-sans flex items-center justify-center bg-orange-500 hover:bg-orange-400 text-white";
   return (
-    <div className={CN3} style={{fontFamily:"Georgia,serif"}} style={{position:"relative"}}>
+    <div className={CN3} style={{fontFamily:"Georgia,serif",position:"relative"}}>
       {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
  <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 px-5 pb-4 border-b border-slate-800/60">
         <div className={CN8}>
@@ -811,7 +811,7 @@ function TimelineScreen(props) {
   }
  var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
   return (
-    <div className={CN3} style={{fontFamily:"Georgia,serif"}} style={{position:"relative"}}>
+    <div className={CN3} style={{fontFamily:"Georgia,serif",position:"relative"}}>
       {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
       <div className="relative" style={{height:"200px"}}>
         {trip.photo ? (
@@ -1108,7 +1108,7 @@ function DashboardScreen(props) {
     setNT(next);
   }
   return (
-    <div className={CN3} style={{fontFamily:"Georgia,serif"}} style={{position:"relative"}}>
+    <div className={CN3} style={{fontFamily:"Georgia,serif",position:"relative"}}>
       {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
  <div className="bg-gradient-to-b from-slate-900 to-slate-950 pt-12 pb-4 px-5">
         <div className="flex items-center justify-between mb-5">
