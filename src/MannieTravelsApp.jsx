@@ -254,7 +254,7 @@ function PhotoEntry(props) {
   return (
     <label style={{cursor:"pointer",display:"inline-block"}}>
       <span style={{background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"9999px",padding:"6px 12px",color:"white",fontSize:"12px",fontFamily:"sans-serif",display:"inline-block"}}>
-        📷 {"📷"}
+        📷
       </span>
       <input type="file" accept="image/*" onChange={handleFile} style={{display:"none"}} />
     </label>
@@ -534,7 +534,7 @@ function AddEditScreen(props) {
           </div>
  {days[selDay] && <p style={{marginTop:"8px",fontSize:"12px",fontFamily:"sans-serif",color:"rgb(249,115,22)"}}>Adding to: {days[selDay].label} — {fmtFull(days[selDay].date)}</p>}
         </div>
- <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden">
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{minHeight:"480px",display:"flex",flexDirection:"column"}}>
  <button onClick={function() { setShowTypes(!showTypes); }} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-800/30">
             <div className={CN8}>
               <span className={CN16}>🎯</span>
@@ -811,8 +811,7 @@ function TimelineScreen(props) {
  var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
   return (
     <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
-      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
-      <div className="relative" style={{height:"200px"}}>
+      <div className="relative" style={{height:"320px"}}>
         {trip.photo ? (
           <img src={trip.photo} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -1895,7 +1894,6 @@ function WishlistScreen(props) {
 
   return (
     <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column",position:"relative"}}>
-      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url(" + trip.photo + ")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
       <div style={{background:"linear-gradient(to bottom, rgb(15,23,42), rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
           <button onClick={function() { go("timeline"); }} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
@@ -1913,7 +1911,7 @@ function WishlistScreen(props) {
           {[{id:"all",label:"All",icon:"✨"}].concat(WISH_CATS).concat([{id:"done",label:"Done",icon:"✅"}]).map(function(c) {
             var isActive = filter === c.id;
             return (
-              <button key={c.id} onClick={(function(id) { return function() { setFilter(id); }; })(c.id)}
+              <button key={c.id} onClick={(function(fid) { return function(e) { e.stopPropagation(); setFilter(fid); }; })(c.id)}
                 style={{fontSize:"12px",padding:"6px 12px",borderRadius:"9999px",border:"1px solid",fontFamily:"sans-serif",cursor:"pointer",
                   background:isActive?"rgb(249,115,22)":"rgba(30,41,59,0.8)",
                   borderColor:isActive?"rgb(234,88,12)":"rgba(71,85,105,0.5)",
