@@ -534,7 +534,7 @@ function AddEditScreen(props) {
           </div>
  {days[selDay] && <p style={{marginTop:"8px",fontSize:"12px",fontFamily:"sans-serif",color:"rgb(249,115,22)"}}>Adding to: {days[selDay].label} — {fmtFull(days[selDay].date)}</p>}
         </div>
- <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{minHeight:"480px",display:"flex",flexDirection:"column"}}>
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{minHeight:"calc(100vh - 320px)",display:"flex",flexDirection:"column"}}>
  <button onClick={function() { setShowTypes(!showTypes); }} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-800/30">
             <div className={CN8}>
               <span className={CN16}>🎯</span>
@@ -1490,24 +1490,18 @@ function GlanceScreen(props) {
           var hasEvents = day.events.length > 0;
           return (
  <div key={day.id} className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden">
-              {(function() {
-                var glanceColors=["#f97316","#3b82f6","#8b5cf6","#10b981","#ec4899","#f59e0b","#06b6d4","#84cc16","#ef4444","#6366f1"];
-                var gc=glanceColors[di%glanceColors.length];
-                return (
-                <button
+              <button
                 onClick={function() { setActiveDay(di); go("timeline"); }}
-                style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",background:"rgba(30,41,59,0.6)",borderBottom:"1px solid rgba(30,41,59,0.6)",borderLeft:"3px solid "+gc,textAlign:"left",border:"none",cursor:"pointer"}}>
+                style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:["linear-gradient(135deg,#7c3aed,#4c1d95)","linear-gradient(135deg,#0369a1,#0c4a6e)","linear-gradient(135deg,#065f46,#064e3b)","linear-gradient(135deg,#9a3412,#7c2d12)","linear-gradient(135deg,#be185d,#9d174d)","linear-gradient(135deg,#b45309,#92400e)","linear-gradient(135deg,#0e7490,#164e63)","linear-gradient(135deg,#3f6212,#365314)","linear-gradient(135deg,#991b1b,#7f1d1d)","linear-gradient(135deg,#1e40af,#1e3a8a)"][di%10],marginBottom:"4px",textAlign:"left",border:"none",cursor:"pointer",borderRadius:"10px"}}>
                 <div>
-                  <span style={{color:gc,fontFamily:"sans-serif",fontWeight:"bold",fontSize:"14px"}}>{day.label}</span>
- <span className="text-slate-400 text-sm font-sans ml-2">{fmtFull(day.date)}</span>
+                  <span style={{color:"white",fontFamily:"sans-serif",fontWeight:"bold",fontSize:"14px"}}>{day.label}</span>
+                  <span style={{color:"rgba(255,255,255,0.7)",fontSize:"12px",fontFamily:"sans-serif",marginLeft:"8px"}}>{fmtFull(day.date)}</span>
                 </div>
-                <div className={CN7}>
- <span className={CN6}>{day.events.length} event{day.events.length !== 1 ? "s" : ""}</span>
-                  <span style={{color:gc,fontSize:"12px",fontFamily:"sans-serif"}}>Open →</span>
+                <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                  <span style={{color:"rgba(255,255,255,0.7)",fontSize:"11px",fontFamily:"sans-serif"}}>{day.events.length} event{day.events.length !== 1 ? "s" : ""}</span>
+                  <span style={{color:"white",fontSize:"12px",fontFamily:"sans-serif"}}>Open →</span>
                 </div>
               </button>
-                );
-              })()}
               {!hasEvents ? (
  <div className="px-4 py-3 text-slate-600 text-sm font-sans italic">No events</div>
               ) : (
@@ -1911,7 +1905,7 @@ function WishlistScreen(props) {
           {[{id:"all",label:"All",icon:"✨"}].concat(WISH_CATS).concat([{id:"done",label:"Done",icon:"✅"}]).map(function(c) {
             var isActive = filter === c.id;
             return (
-              <button key={c.id} onClick={(function(fid) { return function(e) { e.stopPropagation(); setFilter(fid); }; })(c.id)}
+              <button key={c.id} onClick={(function(fid) { return function(e) { e.stopPropagation(); setFilter(fid); if (fid !== "all" && fid !== "done") setCat(fid); }; })(c.id)}
                 style={{fontSize:"12px",padding:"6px 12px",borderRadius:"9999px",border:"1px solid",fontFamily:"sans-serif",cursor:"pointer",
                   background:isActive?"rgb(249,115,22)":"rgba(30,41,59,0.8)",
                   borderColor:isActive?"rgb(234,88,12)":"rgba(71,85,105,0.5)",
