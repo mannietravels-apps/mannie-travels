@@ -534,7 +534,7 @@ function AddEditScreen(props) {
           </div>
  {days[selDay] && <p style={{marginTop:"8px",fontSize:"12px",fontFamily:"sans-serif",color:"rgb(249,115,22)"}}>Adding to: {days[selDay].label} — {fmtFull(days[selDay].date)}</p>}
         </div>
- <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{minHeight:"calc(100vh - 320px)",display:"flex",flexDirection:"column"}}>
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{height:"calc(100vh - 300px)",display:"flex",flexDirection:"column"}}>
  <button onClick={function() { setShowTypes(!showTypes); }} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-800/30">
             <div className={CN8}>
               <span className={CN16}>🎯</span>
@@ -811,7 +811,7 @@ function TimelineScreen(props) {
  var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
   return (
     <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
-      <div className="relative" style={{height:"320px"}}>
+      <div className="relative" style={{flex:"1",minHeight:"280px"}}>
         {trip.photo ? (
           <img src={trip.photo} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -1888,7 +1888,12 @@ function WishlistScreen(props) {
 
   return (
     <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column",position:"relative"}}>
-      <div style={{background:"linear-gradient(to bottom, rgb(15,23,42), rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
+      {trip && trip.photo && (
+        <div style={{height:"140px",backgroundImage:"url("+trip.photo+")",backgroundSize:"cover",backgroundPosition:"center",position:"relative"}}>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom,rgba(15,23,42,0.3),rgba(15,23,42,0.85))"}} />
+        </div>
+      )}
+      <div style={{background:trip && trip.photo ? "rgb(15,23,42)" : "linear-gradient(to bottom, rgb(15,23,42), rgb(2,6,23))",padding:trip && trip.photo ? "16px 20px" : "48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"4px"}}>
           <button onClick={function() { go("timeline"); }} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
           <button onClick={function() { setShowAdd(true); }} style={{background:"rgb(249,115,22)",border:"none",borderRadius:"12px",padding:"8px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"bold"}}>+ Add</button>
