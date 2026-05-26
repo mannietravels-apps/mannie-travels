@@ -534,7 +534,7 @@ function AddEditScreen(props) {
           </div>
  {days[selDay] && <p style={{marginTop:"8px",fontSize:"12px",fontFamily:"sans-serif",color:"rgb(249,115,22)"}}>Adding to: {days[selDay].label} — {fmtFull(days[selDay].date)}</p>}
         </div>
- <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{height:"calc(100vh - 300px)",display:"flex",flexDirection:"column"}}>
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{height:"calc(100vh - 290px)",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
  <button onClick={function() { setShowTypes(!showTypes); }} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-800/30">
             <div className={CN8}>
               <span className={CN16}>🎯</span>
@@ -811,7 +811,7 @@ function TimelineScreen(props) {
  var SYM = {AUD:"A$",USD:"$",GBP:"£",EUR:"€",JPY:"¥",THB:"฿",SGD:"S$",NZD:"NZ$"};
   return (
     <div className={CN3} style={{fontFamily:"Georgia,serif"}}>
-      <div className="relative" style={{flex:"1",minHeight:"280px"}}>
+      <div className="relative" style={{height:"320px"}}>
         {trip.photo ? (
           <img src={trip.photo} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -1129,7 +1129,7 @@ function DashboardScreen(props) {
           var pct = Math.min(100, Math.round((trip.spent / trip.budget) * 100));
           return (
  <div key={trip.id} className="rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-xl">
-              <div className="relative" style={{height:"190px"}}>
+              <div className="relative" style={{flex:1,minHeight:"280px"}}>
                 {trip.photo ? (
  <img src={trip.photo} alt={trip.name} className="w-full h-full object-cover" />
                 ) : (
