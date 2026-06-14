@@ -245,7 +245,7 @@ function PhotoEntry(props) {
       setTrips(function(prev) {
         return prev.map(function(t) {
           if (t.id !== tripId) return t;
-          return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, days:t.days, tripDays:t.tripDays, budget:t.budget, spent:t.spent, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:dataUrl };
+          return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, days:t.days, tripDays:t.tripDays, budget:t.budget, spent:t.spent, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, wishlist:t.wishlist, photo:dataUrl };
         });
       });
     };
@@ -1606,10 +1606,28 @@ function SettingsScreen(props) {
         var dayCount = t.tripDays;
         if (newStart && newEnd) {
           var ms = new Date(newEnd + "T12:00:00") - new Date(newStart + "T12:00:00");
-          var dc = Math.max(1, Math.round(ms / 86400000) + 1);
-          if (dc !== t.tripDays) dayCount = dc;
+          dayCount = Math.max(1, Math.round(ms / 86400000) + 1);
         }
-        return { id:t.id, name:tname||t.name, dests:destArr, start:newStart, end:newEnd, tripDays:dayCount, budget:parseInt(budget)||t.budget, spent:t.spent, status:status, accent:t.accent, flags:t.flags, grad:t.grad, photo:t.photo, days:t.days };
+        var oldDays = t.days || [];
+        // Never silently drop a day that already has events on it, even if the
+        // new date range would otherwise be shorter than the existing itinerary.
+        for (var oi = oldDays.length - 1; oi >= 0; oi--) {
+          if (oldDays[oi].events && oldDays[oi].events.length > 0 && (oi + 1) > dayCount) {
+            dayCount = oi + 1;
+            break;
+          }
+        }
+        var newDays = oldDays;
+        var startChanged = newStart !== t.start;
+        var countChanged = dayCount !== oldDays.length;
+        if (newStart && (startChanged || countChanged)) {
+          var existingEvents = {};
+          for (var ei = 0; ei < oldDays.length; ei++) {
+            existingEvents[ei] = oldDays[ei].events || [];
+          }
+          newDays = makeDays(newStart, dayCount, existingEvents);
+        }
+        return { id:t.id, name:tname||t.name, dests:destArr, start:newStart, end:newEnd, tripDays:dayCount, budget:parseInt(budget)||t.budget, spent:t.spent, status:status, accent:t.accent, flags:t.flags, grad:t.grad, photo:t.photo, wishlist:t.wishlist, days:newDays };
       });
     });
     setSaved(true);
@@ -2042,7 +2060,7 @@ export default function MannieTravelsApp() {
  total += toAUD(newDays[di].events[ei].cost, newDays[di].events[ei].cur);
           }
         }
- return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, tripDays:t.tripDays, budget:t.budget, spent:total, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:t.photo, days:newDays };
+ return { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, tripDays:t.tripDays, budget:t.budget, spent:total, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:t.photo, wishlist:t.wishlist, days:newDays };
       });
     });
   }
@@ -2102,7 +2120,7 @@ export default function MannieTravelsApp() {
   }
   function addTrip(t) {
     var newDays = makeDays(t.start, t.tripDays || 7, {});
- var fullTrip = { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, tripDays:t.tripDays||7, budget:t.budget, spent:0, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:null, days:newDays };
+ var fullTrip = { id:t.id, name:t.name, dests:t.dests, start:t.start, end:t.end, tripDays:t.tripDays||7, budget:t.budget, spent:0, status:t.status, accent:t.accent, flags:t.flags, grad:t.grad, photo:null, wishlist:t.wishlist||[], days:newDays };
     setTrips(function(prev) { return [fullTrip].concat(prev); });
     setActiveTripId(t.id);
   }
