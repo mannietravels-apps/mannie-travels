@@ -230,15 +230,15 @@ function AddrField(props) {
       )}
       {lat && lon && (
         <div style={{marginTop:"8px",borderRadius:"12px",overflow:"hidden",border:"1px solid rgba(71,85,105,0.5)"}}>
-          <div style={{position:"relative"}}>
-            <img
-              src={"https://staticmap.openstreetmap.de/staticmap.php?center="+lat+","+lon+"&zoom=16&size=400x140&markers="+lat+","+lon+",red-pushpin"}
-              alt="Map"
-              style={{width:"100%",height:"140px",objectFit:"cover",display:"block"}}
-              onError={function(e) { e.target.style.display="none"; }}
+          <div style={{position:"relative",height:"150px",overflow:"hidden"}}>
+            <iframe
+              src={"https://www.openstreetmap.org/export/embed.html?bbox="+(parseFloat(lon)-0.005)+","+(parseFloat(lat)-0.005)+","+(parseFloat(lon)+0.005)+","+(parseFloat(lat)+0.005)+"&layer=mapnik&marker="+lat+","+lon}
+              style={{width:"100%",height:"150px",border:"none",display:"block"}}
+              title="map"
+              loading="lazy"
             />
             <button
-              onClick={function() { window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(value)+"&center="+lat+","+lon, "_blank"); }}
+              onClick={function() { window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(value), "_blank"); }}
               style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(15,23,42,0.9)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"8px",padding:"4px 10px",color:"white",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>
               🗺️ Open in Maps
             </button>
