@@ -178,10 +178,20 @@ function AddrField(props) {
     }, 600);
   }
 
+  var stLat = useState(null);
+  var lat = stLat[0]; var setLat = stLat[1];
+  var stLon = useState(null);
+  var lon = stLon[0]; var setLon = stLon[1];
+  var stPlaceName = useState("");
+  var placeName = stPlaceName[0]; var setPlaceName = stPlaceName[1];
+
   function pick(hit) {
     onChange(hit.display_name);
     setOpen(false);
     setHits([]);
+    setLat(hit.lat);
+    setLon(hit.lon);
+    setPlaceName(hit.name || hit.display_name.split(",")[0]);
   }
 
   return (
@@ -216,6 +226,31 @@ function AddrField(props) {
               </button>
             );
           })}
+        </div>
+      )}
+      {lat && lon && (
+        <div style={{marginTop:"8px",borderRadius:"12px",overflow:"hidden",border:"1px solid rgba(71,85,105,0.5)"}}>
+          <div style={{position:"relative"}}>
+            <img
+              src={"https://staticmap.openstreetmap.de/staticmap.php?center="+lat+","+lon+"&zoom=16&size=400x140&markers="+lat+","+lon+",red-pushpin"}
+              alt="Map"
+              style={{width:"100%",height:"140px",objectFit:"cover",display:"block"}}
+              onError={function(e) { e.target.style.display="none"; }}
+            />
+            <button
+              onClick={function() { window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(value)+"&center="+lat+","+lon, "_blank"); }}
+              style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(15,23,42,0.9)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"8px",padding:"4px 10px",color:"white",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>
+              🗺️ Open in Maps
+            </button>
+          </div>
+          <div style={{background:"rgba(15,23,42,0.95)",padding:"8px 12px",display:"flex",gap:"8px",alignItems:"center"}}>
+            <span style={{color:"rgb(148,163,184)",fontSize:"11px",fontFamily:"sans-serif",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{placeName}</span>
+            <button
+              onClick={function() { window.open("https://www.google.com/search?q=" + encodeURIComponent(placeName + " phone number"), "_blank"); }}
+              style={{background:"rgba(249,115,22,0.15)",border:"1px solid rgba(249,115,22,0.3)",borderRadius:"8px",padding:"4px 10px",color:"rgb(249,115,22)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",whiteSpace:"nowrap"}}>
+              📞 Find Phone
+            </button>
+          </div>
         </div>
       )}
     </div>
