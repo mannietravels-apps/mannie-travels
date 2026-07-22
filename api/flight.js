@@ -2,37 +2,84 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const { number } = req.query;
   if (!number) return res.status(400).json({ error: 'No flight number' });
-  const key = process.env.AVIATIONSTACK_KEY;
+  
+  const key = process.env.RAPIDAPI_KEY;
   if (!key) return res.status(500).json({ error: 'API key not configured' });
+  
   try {
-    const url = `http://api.aviationstack.com/v1/flights?access_key=${key}&flight_iata=${encodeURIComponent(number.toUpperCase())}&limit=1`;
-    const response = await fetch(url);
-    const data = await response.json();
-    if (!data.data || data.data.length === 0) {
+    // Get today's date for the flight lookup
+    const today = new Date().toISOString().slice(0, 10);
+    const flightNum = number.toUpperCase().trim();
+    
+    // Try today first, then tomorrow
+    const dates = [today];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    dates.push(tomorrow.toISOString().slice(0, 10));
+    
+    let flightData = null;
+    
+    for (const date of dates) {
+      const url = `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(flightNum)}/${date}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
+          'x-rapidapi-key': key
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          flightData = data[0];
+          break;
+        }
+      }
+    }
+    
+    if (!flightData) {
       return res.status(404).json({ error: 'Flight not found' });
     }
-    const f = data.data[0];
-    const result = {
-      al: f.airline ? f.airline.name : '',
-      dc: f.departure ? f.departure.iata : '',
-      dCity: f.departure ? (f.departure.airport || '') : '',
-      dTerm: f.departure && f.departure.terminal ? f.departure.terminal : '',
-      dep: f.departure && f.departure.scheduled ? f.departure.scheduled.slice(11,16) : '',
-      ac: f.arrival ? f.arrival.iata : '',
-      aCity: f.arrival ? (f.arrival.airport || '') : '',
-      aTerm: f.arrival && f.arrival.terminal ? f.arrival.terminal : '',
-      arr: f.arrival && f.arrival.scheduled ? f.arrival.scheduled.slice(11,16) : '',
-      plane: f.aircraft ? (f.aircraft.iata || '') : '',
-      dur: ''
-    };
-    // Calculate duration if both times available
-    if (result.dep && result.arr) {
-      var depM = parseInt(result.dep.slice(0,2))*60 + parseInt(result.dep.slice(3,5));
-      var arrM = parseInt(result.arr.slice(0,2))*60 + parseInt(result.arr.slice(3,5));
-      var diff = arrM - depM;
+    
+    // Map AeroDataBox response to our app format
+    const dep = flightData.departure || {};
+    const arr = flightData.arrival || {};
+    const airline = flightData.airline || {};
+    const aircraft = flightData.aircraft || {};
+    
+    // Extract times (scheduled time)
+    const depTime = dep.scheduledTime && dep.scheduledTime.local 
+      ? dep.scheduledTime.local.slice(11, 16) 
+      : '';
+    const arrTime = arr.scheduledTime && arr.scheduledTime.local 
+      ? arr.scheduledTime.local.slice(11, 16) 
+      : '';
+    
+    // Calculate duration
+    let dur = '';
+    if (depTime && arrTime) {
+      const depM = parseInt(depTime.slice(0,2))*60 + parseInt(depTime.slice(3,5));
+      const arrM = parseInt(arrTime.slice(0,2))*60 + parseInt(arrTime.slice(3,5));
+      let diff = arrM - depM;
       if (diff < 0) diff += 1440;
-      result.dur = Math.floor(diff/60) + 'h ' + (diff%60) + 'm';
+      dur = Math.floor(diff/60) + 'h ' + (diff%60) + 'm';
     }
+    
+    const result = {
+      al: airline.name || '',
+      dc: dep.airport ? (dep.airport.iata || '') : '',
+      dCity: dep.airport ? (dep.airport.municipalityName || dep.airport.name || '') : '',
+      dTerm: dep.terminal || '',
+      dep: depTime,
+      ac: arr.airport ? (arr.airport.iata || '') : '',
+      aCity: arr.airport ? (arr.airport.municipalityName || arr.airport.name || '') : '',
+      aTerm: arr.terminal || '',
+      arr: arrTime,
+      plane: aircraft.model || '',
+      dur: dur
+    };
+    
     return res.status(200).json(result);
   } catch(e) {
     return res.status(500).json({ error: e.message });
