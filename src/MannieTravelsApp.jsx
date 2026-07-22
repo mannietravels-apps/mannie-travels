@@ -142,56 +142,77 @@ function CopyBtn(props) {
     </button>
   );
 }
-var ADDRS="Sydney Kingsford Smith Airport, Terminal 1, Sydney NSW 2020|Sydney Airport Terminal 2 Domestic, NSW 2020|Melbourne Airport, Tullamarine VIC 3045|Brisbane Airport, Brisbane QLD 4008|Perth Airport, Perth WA 6105|Adelaide Airport, Adelaide SA 5950|Gold Coast Airport, Bilinga QLD 4225|Cairns Airport, Cairns QLD 4870|Dubai International Airport Terminal 1, Dubai, UAE|Dubai International Airport Terminal 3, Dubai, UAE|Abu Dhabi International Airport, Abu Dhabi, UAE|Doha Hamad International Airport, Qatar|Narita International Airport, Narita, Chiba, Japan|Haneda Airport, Ota City, Tokyo, Japan|Kansai International Airport, Osaka, Japan|Suvarnabhumi Airport, Bangkok, Thailand|Singapore Changi Airport, Singapore|Bali Ngurah Rai International Airport, Denpasar, Bali|Kuala Lumpur International Airport, Sepang, Malaysia|Incheon International Airport, Seoul, South Korea|Hong Kong International Airport, Lantau|Heathrow Airport, London TW6, UK|Charles de Gaulle Airport, Paris, France|New York JFK Airport, Queens, New York, USA|Los Angeles International Airport, Los Angeles, USA|Maldives Velana International Airport, Male, Maldives|Tokyo Station, Chiyoda City, Tokyo, Japan|Shinjuku Station, Shinjuku, Tokyo, Japan|Shinjuku Granbell Hotel, 2-14-5 Kabukicho, Shinjuku, Tokyo|Park Hyatt Tokyo, 3-7-1 Nishi-Shinjuku, Tokyo|The Ritz-Carlton Tokyo, 9-7-1 Akasaka, Minato, Tokyo|Andaz Tokyo, 1-23-4 Toranomon, Minato, Tokyo|Conrad Tokyo, 1-9-1 Higashi-Shinbashi, Minato, Tokyo|Senso-ji Temple, 2-3-1 Asakusa, Taito City, Tokyo|Shibuya Crossing, Shibuya City, Tokyo, Japan|Kyoto Station, Shimogyo Ward, Kyoto, Japan|Nishiki Market, Nakagyo, Kyoto, Japan|Gion, Higashiyama Ward, Kyoto, Japan|Fushimi Inari Shrine, Fushimi Ward, Kyoto, Japan|The Ritz-Carlton Kyoto, Kamogawa Nijo, Nakagyo, Kyoto|Four Seasons Hotel Kyoto, Sanjusangendo, Higashiyama, Kyoto|Dotonbori, Namba, Chuo Ward, Osaka, Japan|Capella Bangkok, 300-2 Charoenkrung Road, Bangrak, Bangkok|Mandarin Oriental Bangkok, 48 Oriental Avenue, Bang Rak, Bangkok|The Peninsula Bangkok, 333 Charoennakorn Road, Khlong San, Bangkok|COMO Metropolitan Bangkok, 27 South Sathorn Road, Bangkok|Four Seasons Hotel Bangkok, Charoen Krung Road, Bangkok|Khao San Road, Banglamphu, Phra Nakhon, Bangkok|Sukhumvit Road, Khlong Toei, Bangkok|Grand Palace, Phra Nakhon, Bangkok|Marina Bay Sands, 10 Bayfront Avenue, Singapore|Raffles Hotel Singapore, 1 Beach Road, Singapore|The Fullerton Hotel Singapore, 1 Fullerton Square, Singapore|Gardens by the Bay, 18 Marina Gardens Drive, Singapore|Atlantis The Palm, Crescent Road, Palm Jumeirah, Dubai, UAE|Atlantis The Royal, Palm Jumeirah, Dubai, UAE|Burj Al Arab, Jumeirah Beach Road, Umm Suqeim, Dubai, UAE|Burj Khalifa, 1 Sheikh Mohammed bin Rashid Blvd, Downtown Dubai|Dubai Mall, Financial Centre Road, Downtown Dubai, UAE|Palm Jumeirah, Dubai, UAE|Jumeirah Beach Hotel, Jumeirah Beach Road, Dubai, UAE|Four Seasons Resort Dubai at Jumeirah Beach, Jumeirah, Dubai|Waldorf Astoria Dubai Palm Jumeirah, Palm Jumeirah, Dubai, UAE|One and Only Royal Mirage, Al Sufouh Road, Dubai, UAE|Sofitel Dubai The Palm, East Crescent, Palm Jumeirah, Dubai, UAE|W Dubai The Palm, West Crescent, Palm Jumeirah, Dubai, UAE|The Ritz-Carlton Dubai, JBR Walk, Jumeirah Beach Residence, Dubai|FIVE Palm Jumeirah, Palm Jumeirah, Dubai, UAE|Anantara The Palm Dubai Resort, Palm Jumeirah, Dubai, UAE|Caesars Palace Dubai, West Crescent, Palm Jumeirah, Dubai, UAE|Madinat Jumeirah, Al Sufouh Road, Umm Suqeim, Dubai, UAE|Emirates Palace, Corniche Road West, Abu Dhabi, UAE|The Savoy, Strand, London WC2R, UK|Claridges, Brook Street, Mayfair, London W1K, UK|The Ritz London, 150 Piccadilly, London W1J, UK|The Dorchester, Park Lane, London W1K, UK|Hotel Ritz Paris, 15 Place Vendome, Paris, France|Four Seasons Hotel George V, 31 Avenue George V, Paris, France|Eiffel Tower, Champ de Mars, Paris, France|Louvre Museum, Rue de Rivoli, Paris, France|Hotel Hassler Roma, Piazza Trinita dei Monti, Rome, Italy|Colosseum, Piazza del Colosseo, Rome, Italy|Hotel Arts Barcelona, 19-21 Carrer de la Marina, Barcelona|La Sagrada Familia, Carrer de Mallorca, Barcelona, Spain|JK Place Capri, Via Provinciale Marina Grande, Capri, Italy|Santorini, Cyclades, Greece|Mykonos, Cyclades, Greece|Four Seasons Resort Bali at Sayan, Sayan, Ubud, Bali|COMO Uma Ubud, Jalan Raya Sanggingan, Ubud, Bali|Alila Villas Uluwatu, Jalan Belimbing Sari, Uluwatu, Bali|Seminyak Beach, Seminyak, Kuta, Badung Regency, Bali|Kuta Beach, Kuta, Badung Regency, Bali, Indonesia|Tanah Lot Temple, Beraban, Tabanan Regency, Bali|Ubud, Gianyar Regency, Bali, Indonesia|Nusa Penida, Klungkung Regency, Bali, Indonesia|Velaa Private Island, Noonu Atoll, Maldives|Soneva Jani, Noonu Atoll, Maldives|Conrad Maldives Rangali Island, South Ari Atoll, Maldives|Park Hyatt Maldives Hadahaa, Gaafu Alifu Atoll, Maldives|Anantara Kihavah Maldives Villas, Baa Atoll, Maldives|Gili Lankanfushi, North Male Atoll, Maldives|The Plaza Hotel, Fifth Avenue, New York, NY, USA|The Beverly Hills Hotel, 9641 Sunset Blvd, Beverly Hills, CA, USA|Hotel de Russie, Via del Babuino 9, Rome, Italy|Rome Cavalieri Waldorf Astoria, Via Alberto Cadlolo 101, Rome, Italy|The St Regis Rome, Via Vittorio Emanuele Orlando 3, Rome, Italy|Hotel Eden Rome, Via Ludovisi 49, Rome, Italy|Hotel Cipriani, Giudecca 10, Venice, Italy|Aman Venice, Calle Tiepolo, San Polo, Venice, Italy|The Gritti Palace, Campo Santa Maria del Giglio, Venice, Italy|Belmond Hotel Splendido, Viale Baratta 16, Portofino, Italy|Grand Hotel Tremezzo, Via Regina 8, Lake Como, Italy|Villa d Este, Via Regina 40, Cernobbio, Lake Como, Italy|Four Seasons Hotel Firenze, Borgo Pinti 99, Florence, Italy|Il San Pietro di Positano, Via Laurito 2, Positano, Italy|Le Sirenuse, Via Cristoforo Colombo 30, Positano, Italy|Palazzo Avino, Via San Giovanni del Toro 28, Ravello, Amalfi Coast, Italy|Capri Palace Jumeirah, Via Capodimonte 14, Capri, Italy|Mandarin Oriental Barcelona, Passeig de Gracia 38, Barcelona, Spain|Cotton House Hotel, Gran Via de les Corts Catalanes 670, Barcelona, Spain|Four Seasons Hotel Madrid, Calle de Sevilla 3, Madrid, Spain|Hotel Villa Magna, Paseo de la Castellana 22, Madrid, Spain|La Alhambra, Calle Real de la Alhambra, Granada, Spain|Marbella Club Hotel, Boulevard Principe Alfonso von Hohenlohe, Marbella, Spain|Mandarin Oriental Paris, 251 Rue Saint-Honore, Paris, France|Hotel Lutetia, 45 Boulevard Raspail, Paris, France|Shangri-La Hotel Paris, 10 Avenue d Iena, Paris, France|Cheval Blanc Paris, 8 Quai du Louvre, Paris, France|Hotel de Crillon, 10 Place de la Concorde, Paris, France|Hotel du Cap-Eden-Roc, Boulevard Kennedy, Antibes, France|Hotel Martinez, 73 Boulevard de la Croisette, Cannes, France|45 Park Lane, 45 Park Lane, London W1K, UK|Mandarin Oriental Hyde Park, 66 Knightsbridge, London SW1X, UK|Four Seasons London at Park Lane, Hamilton Place, London W1J, UK|The Berkeley, Wilton Place, Knightsbridge, London SW1X, UK|Bvlgari Hotel London, 171 Knightsbridge, London SW7, UK|Gleneagles Hotel, Auchterarder, Perthshire, Scotland, UK|Katikies Hotel, Oia, Santorini, Greece|Canaves Oia Suites, Oia, Santorini, Greece|Mystique Hotel Santorini, Oia, Santorini, Greece|Grace Hotel Santorini, Imerovigli, Santorini, Greece|Belvedere Hotel Mykonos, School of Fine Arts, Mykonos, Greece|Santa Marina Mykonos, Ornos Bay, Mykonos, Greece|Hotel Grande Bretagne, Syntagma Square, Athens, Greece|Amanzoe, Porto Heli, Argolida, Greece|Bairro Alto Hotel, Praca Luis de Camoes 2, Lisbon, Portugal|Four Seasons Hotel Ritz Lisbon, Rua Rodrigo da Fonseca 88, Lisbon, Portugal|Hotel Adlon Kempinski, Unter den Linden 77, Berlin, Germany|Hotel Sacher Wien, Philharmoniker Strasse 4, Vienna, Austria|The Chedi Andermatt, Gotthardstrasse 4, Andermatt, Switzerland|Badrutt Palace Hotel, Via Serlas 27, St Moritz, Switzerland|Conservatorium Hotel Amsterdam, Van Baerlestraat 27, Amsterdam, Netherlands|Capella Ubud, Desa Keliki, Tegallalang, Ubud, Bali, Indonesia|Alila Ubud, Desa Melinggih Kelod, Payangan, Ubud, Bali, Indonesia|Komaneka at Bisma, Jalan Bisma, Ubud, Bali, Indonesia|Mandapa Ritz-Carlton Reserve, Jalan Kedewatan, Ubud, Bali, Indonesia|Viceroy Bali, Jalan Lanyahan, Ubud, Bali, Indonesia|Bulgari Resort Bali, Jalan Goa Lempeh, Uluwatu, Bali, Indonesia|Banyan Tree Ungasan, Jalan Melasti, Ungasan, Bali, Indonesia|The Mulia Bali, Jalan Raya Nusa Dua Selatan, Nusa Dua, Bali|St Regis Bali Resort, Kawasan Pariwisata, Nusa Dua, Bali, Indonesia|COMO Shambhala Estate, Banjar Begawan, Payangan, Ubud, Bali|Ayana Resort and Spa Bali, Jalan Karang Mas Sejahtera, Jimbaran, Bali|Locavore, Jalan Dewi Sita, Ubud, Bali, Indonesia|Mozaic Restaurant, Jalan Raya Sanggingan, Ubud, Bali, Indonesia|Tegallalang Rice Terraces, Tegallalang, Ubud, Bali, Indonesia|Mount Batur, Kintamani, Bangli Regency, Bali, Indonesia|Uluwatu Temple, Pecatu, Kuta Selatan, Bali, Indonesia|Park Hyatt Saigon, 2 Lam Son Square, Ho Chi Minh City, Vietnam|Capella Hanoi, 11 Le Phung Hieu, Hoan Kiem, Hanoi, Vietnam|Sofitel Legend Metropole Hanoi, 15 Ngo Quyen, Hoan Kiem, Hanoi, Vietnam|JW Marriott Hotel Hanoi, 8 Do Duc Duc, Me Tri, Hanoi, Vietnam|Four Seasons Hotel Hanoi, 4 Ngo Quyen, Hoan Kiem, Hanoi, Vietnam|Four Seasons Resort The Nam Hai Hoi An, Dien Ban, Quang Nam, Vietnam|Anantara Hoi An Resort, 1 Pham Hong Thai, Hoi An, Quang Nam, Vietnam|Rosewood Phu Quoc, Ong Lang Beach, Phu Quoc, Kien Giang, Vietnam|JW Marriott Phu Quoc Emerald Bay, Khem Beach, Phu Quoc, Vietnam|InterContinental Phu Quoc Long Beach Resort, Bai Truong, Phu Quoc, Vietnam|Six Senses Con Dao, Dat Doc Beach, Con Dao, Vietnam|Amanoi, Vinh Hy Bay, Ninh Hai, Ninh Thuan, Vietnam|Noi Bai International Airport, Soc Son, Hanoi, Vietnam|Tan Son Nhat International Airport, Tan Binh, Ho Chi Minh City, Vietnam|Da Nang International Airport, Hai Chau, Da Nang, Vietnam|Phu Quoc International Airport, Phu Quoc, Kien Giang, Vietnam|Hoan Kiem Lake, Hoan Kiem, Hanoi, Vietnam|Old Quarter Hanoi, Hoan Kiem, Hanoi, Vietnam|Hoi An Ancient Town, Hoi An, Quang Nam, Vietnam|Ha Long Bay, Quang Ninh, Vietnam".split("|");
+// Address autocomplete now uses OpenStreetMap live search
 function AddrField(props) {
   var value = props.value;
   var onChange = props.onChange;
-  var hitsState = useState([]);
-  var hits = hitsState[0];
-  var setHits = hitsState[1];
-  var openState = useState(false);
-  var open = openState[0];
-  var setOpen = openState[1];
+  var stHits = useState([]);
+  var hits = stHits[0]; var setHits = stHits[1];
+  var stOpen = useState(false);
+  var open = stOpen[0]; var setOpen = stOpen[1];
+  var stLoading = useState(false);
+  var loading = stLoading[0]; var setLoading = stLoading[1];
+  var timerRef = useRef(null);
+
   function handleType(v) {
     onChange(v);
-    if (v.length > 1) {
-      var q = v.toLowerCase().trim();
-      var words = q.split(/\s+/);
-      var matches = [];
-      for (var i = 0; i < ADDRS.length; i++) {
-        var addr = ADDRS[i].toLowerCase();
-        var hit = false;
-        for (var w = 0; w < words.length; w++) {
- if (words[w].length > 1 && addr.indexOf(words[w]) !== -1) { hit = true; break; }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!v || v.length < 3) { setHits([]); setOpen(false); return; }
+    timerRef.current = setTimeout(function() {
+      setLoading(true);
+      fetch("https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(v) + "&format=json&limit=6&addressdetails=1", {
+        headers: { "Accept-Language": "en", "User-Agent": "MannieTravelsApp/1.0" }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        setLoading(false);
+        if (data && data.length > 0) {
+          setHits(data);
+          setOpen(true);
+        } else {
+          setHits([]);
+          setOpen(false);
         }
-        if (hit) {
-          matches.push(ADDRS[i]);
-          if (matches.length >= 8) break;
-        }
-      }
-      setHits(matches);
-      setOpen(matches.length > 0);
-    } else {
-      setOpen(false);
-    }
+      })
+      .catch(function() { setLoading(false); });
+    }, 600);
   }
-  function pick(s) { onChange(s); setOpen(false); }
-  function handleBlur() { setTimeout(function() { setOpen(false); }, 180); }
- function handleFocus() { if (value.length > 1 && hits.length > 0) setOpen(true); }
+
+  function pick(hit) {
+    onChange(hit.display_name);
+    setOpen(false);
+    setHits([]);
+  }
+
   return (
-    <div className="relative">
- <input type="text" value={value} onChange={function(e) { handleType(e.target.value); }}
-        onBlur={handleBlur} onFocus={handleFocus}
-        placeholder="Start typing — suggestions appear"
-        className={CN14} />
+    <div style={{position:"relative"}}>
+      <div style={{position:"relative"}}>
+        <input
+          type="text"
+          value={value}
+          onChange={function(e) { handleType(e.target.value); }}
+          onBlur={function() { setTimeout(function() { setOpen(false); }, 200); }}
+          placeholder="Start typing any hotel, restaurant, attraction..."
+          className={CN14}
+        />
+        {loading && <div style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif"}}>searching...</div>}
+      </div>
       {open && hits.length > 0 && (
- <div className="absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-xl overflow-hidden z-50 shadow-2xl">
-          {hits.map(function(s, i) {
+        <div style={{position:"absolute",top:"100%",left:0,right:0,background:"rgb(15,23,42)",border:"1px solid rgba(71,85,105,0.8)",borderRadius:"12px",zIndex:999,maxHeight:"240px",overflowY:"auto",marginTop:"4px",boxShadow:"0 8px 32px rgba(0,0,0,0.8)"}}>
+          {hits.map(function(hit, i) {
+            var name = hit.name || hit.display_name.split(",")[0];
+            var address = hit.display_name;
+            var type = hit.type || hit.class || "";
+            var icon = type === "hotel" || type === "tourism" ? "🏨" :
+                       type === "restaurant" || type === "food" ? "🍽️" :
+                       type === "bar" || type === "pub" ? "🍸" :
+                       type === "aeroway" || type === "airport" ? "✈️" :
+                       type === "attraction" ? "🎡" : "📍";
             return (
-              <button key={i} type="button" onClick={function() { pick(s); }}
- className="w-full text-left px-4 py-2.5 text-slate-300 text-xs font-sans hover:bg-slate-700 border-b border-slate-700/40 last:border-0 flex items-start gap-2">
-                <span className="shrink-0 text-slate-500 mt-0.5">📍</span>
-                <span>{s}</span>
+              <button key={i} onMouseDown={function() { pick(hit); }}
+                style={{width:"100%",padding:"10px 14px",background:"none",border:"none",borderBottom:i < hits.length-1 ? "1px solid rgba(30,41,59,0.8)" : "none",cursor:"pointer",textAlign:"left",display:"block"}}>
+                <div style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",fontWeight:"600",marginBottom:"2px"}}>{icon} {name}</div>
+                <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{address}</div>
               </button>
             );
           })}
@@ -200,6 +221,7 @@ function AddrField(props) {
     </div>
   );
 }
+
 function BottomNav(props) {
   var active = props.active;
   var go = props.go;
