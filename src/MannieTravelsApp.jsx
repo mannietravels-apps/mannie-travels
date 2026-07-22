@@ -143,21 +143,26 @@ function CopyBtn(props) {
   );
 }
 // Address autocomplete now uses OpenStreetMap live search
-function AddrField(props) {
+function SmartPlaceSearch(props) {
   var value = props.value;
-  var onChange = props.onChange;
+  var onTitleChange = props.onTitleChange;
+  var onAddrChange = props.onAddrChange;
+  var onSelectPlace = props.onSelectPlace;
   var stHits = useState([]);
   var hits = stHits[0]; var setHits = stHits[1];
   var stOpen = useState(false);
   var open = stOpen[0]; var setOpen = stOpen[1];
   var stLoading = useState(false);
   var loading = stLoading[0]; var setLoading = stLoading[1];
+  var stSel = useState(null);
+  var sel = stSel[0]; var setSel = stSel[1];
   var timerRef = useRef(null);
 
   function handleType(v) {
-    onChange(v);
+    onTitleChange(v);
+    setSel(null);
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!v || v.length < 3) { setHits([]); setOpen(false); return; }
+    if (!v || v.length < 2) { setHits([]); setOpen(false); return; }
     timerRef.current = setTimeout(function() {
       setLoading(true);
       fetch("https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(v) + "&format=json&limit=6&addressdetails=1", {
@@ -166,32 +171,20 @@ function AddrField(props) {
       .then(function(r) { return r.json(); })
       .then(function(data) {
         setLoading(false);
-        if (data && data.length > 0) {
-          setHits(data);
-          setOpen(true);
-        } else {
-          setHits([]);
-          setOpen(false);
-        }
+        if (data && data.length > 0) { setHits(data); setOpen(true); }
+        else { setHits([]); setOpen(false); }
       })
       .catch(function() { setLoading(false); });
-    }, 600);
+    }, 500);
   }
 
-  var stLat = useState(null);
-  var lat = stLat[0]; var setLat = stLat[1];
-  var stLon = useState(null);
-  var lon = stLon[0]; var setLon = stLon[1];
-  var stPlaceName = useState("");
-  var placeName = stPlaceName[0]; var setPlaceName = stPlaceName[1];
-
   function pick(hit) {
-    onChange(hit.display_name);
+    var name = hit.name || hit.display_name.split(",")[0];
+    onTitleChange(name);
+    onAddrChange(hit.display_name);
+    setSel(hit);
     setOpen(false);
     setHits([]);
-    setLat(hit.lat);
-    setLon(hit.lon);
-    setPlaceName(hit.name || hit.display_name.split(",")[0]);
   }
 
   return (
@@ -201,59 +194,61 @@ function AddrField(props) {
           type="text"
           value={value}
           onChange={function(e) { handleType(e.target.value); }}
-          onBlur={function() { setTimeout(function() { setOpen(false); }, 200); }}
-          placeholder="Start typing any hotel, restaurant, attraction..."
-          className={CN14}
+          onBlur={function() { setTimeout(function() { setOpen(false); }, 250); }}
+          placeholder="Type place name — address auto-fills"
+          style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",boxSizing:"border-box"}}
         />
-        {loading && <div style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif"}}>searching...</div>}
+        {loading && <div style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",color:"rgb(249,115,22)",fontSize:"11px",fontFamily:"sans-serif"}}>searching...</div>}
       </div>
       {open && hits.length > 0 && (
-        <div style={{position:"absolute",top:"100%",left:0,right:0,background:"rgb(15,23,42)",border:"1px solid rgba(71,85,105,0.8)",borderRadius:"12px",zIndex:999,maxHeight:"240px",overflowY:"auto",marginTop:"4px",boxShadow:"0 8px 32px rgba(0,0,0,0.8)"}}>
+        <div style={{position:"absolute",top:"100%",left:0,right:0,background:"rgb(15,23,42)",border:"1px solid rgba(71,85,105,0.8)",borderRadius:"12px",zIndex:999,maxHeight:"220px",overflowY:"auto",marginTop:"4px",boxShadow:"0 8px 32px rgba(0,0,0,0.8)"}}>
           {hits.map(function(hit, i) {
             var name = hit.name || hit.display_name.split(",")[0];
-            var address = hit.display_name;
+            var sub = hit.display_name.split(",").slice(1,3).join(",");
             var type = hit.type || hit.class || "";
-            var icon = type === "hotel" || type === "tourism" ? "🏨" :
-                       type === "restaurant" || type === "food" ? "🍽️" :
-                       type === "bar" || type === "pub" ? "🍸" :
-                       type === "aeroway" || type === "airport" ? "✈️" :
-                       type === "attraction" ? "🎡" : "📍";
+            var icon = type === "hotel" ? "🏨" : type === "restaurant" ? "🍽️" : type === "bar" || type === "pub" ? "🍸" : type === "airport" || type === "aeroway" ? "✈️" : type === "museum" || type === "attraction" ? "🎡" : type === "cafe" ? "☕" : "📍";
             return (
               <button key={i} onMouseDown={function() { pick(hit); }}
                 style={{width:"100%",padding:"10px 14px",background:"none",border:"none",borderBottom:i < hits.length-1 ? "1px solid rgba(30,41,59,0.8)" : "none",cursor:"pointer",textAlign:"left",display:"block"}}>
                 <div style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",fontWeight:"600",marginBottom:"2px"}}>{icon} {name}</div>
-                <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{address}</div>
+                <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sub}</div>
               </button>
             );
           })}
         </div>
       )}
-      {lat && lon && (
-        <div style={{marginTop:"8px",borderRadius:"12px",overflow:"hidden",border:"1px solid rgba(71,85,105,0.5)"}}>
-          <div style={{position:"relative",height:"150px",overflow:"hidden"}}>
-            <iframe
-              src={"https://www.openstreetmap.org/export/embed.html?bbox="+(parseFloat(lon)-0.005)+","+(parseFloat(lat)-0.005)+","+(parseFloat(lon)+0.005)+","+(parseFloat(lat)+0.005)+"&layer=mapnik&marker="+lat+","+lon}
-              style={{width:"100%",height:"150px",border:"none",display:"block"}}
-              title="map"
-              loading="lazy"
-            />
+      {sel && (
+        <div style={{marginTop:"6px",borderRadius:"10px",border:"1px solid rgba(59,130,246,0.3)",overflow:"hidden",background:"rgba(15,23,42,0.8)"}}>
+          <div style={{display:"flex"}}>
             <button
-              onClick={function() { window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(value), "_blank"); }}
-              style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(15,23,42,0.9)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"8px",padding:"4px 10px",color:"white",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>
-              🗺️ Open in Maps
+              onClick={function() { window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(sel.display_name)+"@"+sel.lat+","+sel.lon, "_blank"); }}
+              style={{flex:1,padding:"10px",background:"rgba(59,130,246,0.15)",border:"none",borderRight:"1px solid rgba(30,41,59,0.8)",cursor:"pointer",color:"rgb(147,197,253)",fontSize:"12px",fontFamily:"sans-serif",fontWeight:"600"}}>
+              🗺️ View on Map
             </button>
-          </div>
-          <div style={{background:"rgba(15,23,42,0.95)",padding:"8px 12px",display:"flex",gap:"8px",alignItems:"center"}}>
-            <span style={{color:"rgb(148,163,184)",fontSize:"11px",fontFamily:"sans-serif",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{placeName}</span>
             <button
-              onClick={function() { window.open("https://www.google.com/search?q=" + encodeURIComponent(placeName + " phone number"), "_blank"); }}
-              style={{background:"rgba(249,115,22,0.15)",border:"1px solid rgba(249,115,22,0.3)",borderRadius:"8px",padding:"4px 10px",color:"rgb(249,115,22)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",whiteSpace:"nowrap"}}>
+              onClick={function() { window.open("https://www.google.com/search?q=" + encodeURIComponent((sel.name || sel.display_name.split(",")[0]) + " phone number"), "_blank"); }}
+              style={{flex:1,padding:"10px",background:"rgba(249,115,22,0.15)",border:"none",cursor:"pointer",color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif",fontWeight:"600"}}>
               📞 Find Phone
             </button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function AddrField(props) {
+  var value = props.value;
+  var onChange = props.onChange;
+  var placeholder = props.placeholder || "Address";
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={function(e) { onChange(e.target.value); }}
+      placeholder={placeholder}
+      style={{width:"100%",background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"12px 16px",color:"white",fontSize:"14px",fontFamily:"sans-serif",outline:"none",boxSizing:"border-box",display:"block"}}
+    />
   );
 }
 
@@ -765,9 +760,21 @@ function AddEditScreen(props) {
  <div className={CN7}><span className={CN16}>📝</span><span className={CN4}>Event Details</span></div>
           <div>
  <label className={lbl}>Event Name <span className={CN16}>*</span></label>
- <input type="text" placeholder={isFlight ? "e.g. Sydney to Tokyo Narita" : "e.g. Check-in Shinjuku Granbell Hotel"} value={title} onChange={function(e) { setTitle(e.target.value); }} className={inp} />
+ {isFlight ? (
+   <input type="text" placeholder="e.g. Sydney to Tokyo Narita" value={title} onChange={function(e) { setTitle(e.target.value); }} className={inp} />
+ ) : (
+   <SmartPlaceSearch
+     value={title}
+     onTitleChange={setTitle}
+     onAddrChange={setAddr}
+     onSelectPlace={function(place) {
+       setTitle(place.name || place.display_name.split(",")[0]);
+       setAddr(place.display_name);
+     }}
+   />
+ )}
           </div>
- <div><label className={lbl}>Address</label><AddrField value={addr} onChange={setAddr} placeholder="Start typing — suggestions appear" /></div>
+ <div><label className={lbl}>Address</label><AddrField value={addr} onChange={setAddr} placeholder="Auto-filled above, or type manually" /></div>
  <div><label className={lbl}>Booking Reference</label><input type="text" placeholder="e.g. QF7821 or HB-990234" value={bookRef} onChange={function(e) { setRef(e.target.value); }} className={inp + " font-mono"} /></div>
  {isFlight && <div><label className={lbl}>Aircraft Type</label><input type="text" placeholder="e.g. Boeing 787-9 Dreamliner" value={plane} onChange={function(e) { setPlane(e.target.value); }} className={inp} /></div>}
         </div>
