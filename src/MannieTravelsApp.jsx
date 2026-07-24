@@ -312,35 +312,146 @@ function PhotoEntry(props) {
     </label>
   );
 }
+// IndexedDB helpers for file storage
+var IDB_NAME = "mannie_files";
+var IDB_STORE = "files";
+function openIDB() {
+  return new Promise(function(resolve, reject) {
+    var req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = function(e) {
+      e.target.result.createObjectStore(IDB_STORE, { keyPath: "id" });
+    };
+    req.onsuccess = function(e) { resolve(e.target.result); };
+    req.onerror = function() { reject(req.error); };
+  });
+}
+function saveFileIDB(fileObj) {
+  return openIDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(fileObj);
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function() { reject(tx.error); };
+    });
+  });
+}
+function getFileIDB(id) {
+  return openIDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(IDB_STORE, "readonly");
+      var req = tx.objectStore(IDB_STORE).get(id);
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function() { reject(req.error); };
+    });
+  });
+}
+function deleteFileIDB(id) {
+  return openIDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).delete(id);
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function() { reject(tx.error); };
+    });
+  });
+}
+
 function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
+
   function handleFiles(e) {
     if (!e.target.files) return;
-    var names = [];
-    for (var i = 0; i < e.target.files.length; i++) {
-      names.push(e.target.files[i].name);
-    }
-    if (names.length > 0) setDocs(docs.concat(names));
+    var files = Array.from(e.target.files);
+    files.forEach(function(file) {
+      var reader = new FileReader();
+      var fileId = "doc_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      var fileName = file.name;
+      var fileType = file.type;
+      var fileSize = file.size;
+      reader.onload = function(evt) {
+        var fileObj = { id: fileId, name: fileName, type: fileType, size: fileSize, data: evt.target.result, savedAt: new Date().toISOString() };
+        saveFileIDB(fileObj).then(function() {
+          setDocs(function(prev) {
+            return prev.concat([{ id: fileId, name: fileName, type: fileType, size: fileSize }]);
+          });
+        }).catch(function() {
+          // Fallback: store name only
+          setDocs(function(prev) { return prev.concat([{ id: fileId, name: fileName, type: fileType, size: fileSize }]); });
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
   }
-  function removeDoc(idx) {
+
+  function removeDoc(doc, idx) {
+    if (doc && doc.id) deleteFileIDB(doc.id).catch(function() {});
     setDocs(docs.filter(function(_, j) { return j !== idx; }));
   }
+
+  function openDoc(doc) {
+    if (!doc || !doc.id) return;
+    getFileIDB(doc.id).then(function(fileObj) {
+      if (!fileObj) return;
+      var win = window.open("", "_blank");
+      if (!win) return;
+      if (fileObj.type && fileObj.type.startsWith("image/")) {
+        win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + fileObj.data + '" style="max-width:100%;max-height:100vh" /></body></html>');
+      } else if (fileObj.type === "application/pdf") {
+        win.document.write('<html><body style="margin:0;height:100vh"><iframe src="' + fileObj.data + '" style="width:100%;height:100%;border:none"></iframe></body></html>');
+      } else {
+        var a = win.document.createElement("a");
+        a.href = fileObj.data;
+        a.download = fileObj.name;
+        win.document.body.appendChild(a);
+        a.click();
+      }
+    }).catch(function() { alert("Could not open file. Try re-attaching it."); });
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1024) return bytes + "B";
+    if (bytes < 1048576) return Math.round(bytes/1024) + "KB";
+    return (bytes/1048576).toFixed(1) + "MB";
+  }
+
+  function getIcon(type) {
+    if (!type) return "📄";
+    if (type.startsWith("image/")) return "🖼️";
+    if (type === "application/pdf") return "📋";
+    if (type.includes("word")) return "📝";
+    if (type.includes("excel") || type.includes("sheet")) return "📊";
+    return "📄";
+  }
+
   return (
-    <div className="space-y-2">
-      <label className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-slate-600/60 text-slate-400 text-sm font-sans cursor-pointer">
-        📎 Attach Document
-        <input type="file" multiple onChange={handleFiles} style={{display:"none"}} />
+    <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+      <label style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",background:"rgba(15,23,42,0.5)"}}>
+        📎 Attach Files
+        <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, photos</span>
+        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onChange={handleFiles} style={{display:"none"}} />
       </label>
       {docs.length > 0 && (
-        <div className="space-y-1.5">
+        <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
           {docs.map(function(d, i) {
             var idx = i;
-            var docName = typeof d === "string" ? d : d.name;
+            var docObj = typeof d === "string" ? { name: d, id: null } : d;
             return (
-              <div key={idx} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
-                <div className={CN7}><span>📄</span><span className={CN20}>{docName}</span></div>
-                <button onClick={function() { removeDoc(idx); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
+              <div key={idx} onClick={function(e) { e.stopPropagation(); if (docObj.id) openDoc(docObj); }}
+                style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px",cursor:docObj.id ? "pointer" : "default"}}>
+                <span style={{fontSize:"20px",flexShrink:0}}>{getIcon(docObj.type)}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{docObj.name}</div>
+                  <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif"}}>
+                    {docObj.id ? "Tap to open" : "Name only"}{docObj.size ? " · " + formatSize(docObj.size) : ""}
+                  </div>
+                </div>
+                <button onClick={function(e) { e.stopPropagation(); removeDoc(docObj, idx); }}
+                  style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",flexShrink:0}}>
+                  Remove
+                </button>
               </div>
             );
           })}
@@ -1118,11 +1229,34 @@ function TimelineScreen(props) {
                           {ev.docs && ev.docs.length > 0 && (
                             <div className="space-y-1">
                               {ev.docs.map(function(d, di) {
-                                var docName = typeof d === "string" ? d : (d && d.name ? d.name : "Document");
+                                var docObj = typeof d === "string" ? {name:d,id:null} : d;
+                                var icon = docObj.type && docObj.type.startsWith("image/") ? "🖼️" : docObj.type === "application/pdf" ? "📋" : docObj.type && docObj.type.includes("word") ? "📝" : "📄";
                                 return (
-                                  <div key={di} onClick={function(e) { e.stopPropagation(); }} className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
-                                    <span>📄</span>
-                                    <span className={CN20} style={{flex:1}}>{docName}</span>
+                                  <div key={di}
+                                    onClick={function(e) {
+                                      e.stopPropagation();
+                                      if (!docObj.id) return;
+                                      getFileIDB(docObj.id).then(function(f) {
+                                        if (!f) { alert("File not found. Try re-attaching."); return; }
+                                        var win = window.open("","_blank");
+                                        if (!win) return;
+                                        if (f.type && f.type.startsWith("image/")) {
+                                          win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+f.data+'" style="max-width:100%;max-height:100vh"/></body></html>');
+                                        } else if (f.type === "application/pdf") {
+                                          win.document.write('<html><body style="margin:0;height:100vh"><iframe src="'+f.data+'" style="width:100%;height:100%;border:none"></iframe></body></html>');
+                                        } else {
+                                          var a = win.document.createElement("a");
+                                          a.href = f.data; a.download = f.name;
+                                          win.document.body.appendChild(a); a.click();
+                                        }
+                                      }).catch(function() { alert("Could not open file."); });
+                                    }}
+                                    style={{display:"flex",alignItems:"center",gap:"8px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"8px 12px",cursor:docObj.id?"pointer":"default"}}>
+                                    <span style={{fontSize:"16px"}}>{icon}</span>
+                                    <div style={{flex:1,minWidth:0}}>
+                                      <div style={{color:"white",fontSize:"12px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{docObj.name}</div>
+                                      {docObj.id && <div style={{color:"rgb(100,116,139)",fontSize:"10px",fontFamily:"sans-serif"}}>Tap to open{docObj.size ? " · " + (docObj.size > 1048576 ? (docObj.size/1048576).toFixed(1)+"MB" : Math.round(docObj.size/1024)+"KB") : ""}</div>}
+                                    </div>
                                   </div>
                                 );
                               })}
