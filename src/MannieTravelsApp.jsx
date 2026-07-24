@@ -362,24 +362,32 @@ function DocEntry(props) {
   var setDocs = props.setDocs;
 
   function handleFiles(e) {
-    if (!e.target.files) return;
-    var files = Array.from(e.target.files);
-    files.forEach(function(file) {
-      var reader = new FileReader();
+    if (!e.target.files || e.target.files.length === 0) return;
+    var fileList = Array.from(e.target.files);
+    var pending = fileList.length;
+    var results = [];
+    fileList.forEach(function(file) {
       var fileId = "doc_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      var fileName = file.name;
-      var fileType = file.type;
-      var fileSize = file.size;
+      var meta = { id: fileId, name: file.name, type: file.type, size: file.size };
+      var reader = new FileReader();
       reader.onload = function(evt) {
-        var fileObj = { id: fileId, name: fileName, type: fileType, size: fileSize, data: evt.target.result, savedAt: new Date().toISOString() };
-        saveFileIDB(fileObj).then(function() {
-          setDocs(function(prev) {
-            return prev.concat([{ id: fileId, name: fileName, type: fileType, size: fileSize }]);
+        var fileObj = Object.assign({}, meta, { data: evt.target.result });
+        saveFileIDB(fileObj)
+          .then(function() {
+            results.push(meta);
+            pending--;
+            if (pending === 0) setDocs(function(prev) { return prev.concat(results); });
+          })
+          .catch(function() {
+            results.push(meta);
+            pending--;
+            if (pending === 0) setDocs(function(prev) { return prev.concat(results); });
           });
-        }).catch(function() {
-          // Fallback: store name only
-          setDocs(function(prev) { return prev.concat([{ id: fileId, name: fileName, type: fileType, size: fileSize }]); });
-        });
+      };
+      reader.onerror = function() {
+        results.push(meta);
+        pending--;
+        if (pending === 0) setDocs(function(prev) { return prev.concat(results); });
       };
       reader.readAsDataURL(file);
     });
@@ -2230,7 +2238,7 @@ function DocumentsScreen(props) {
     });
     setFiles(allDocs);
     setLoading(false);
-  }, []);
+  }, [days]);
 
   function openFile(doc) {
     getFileIDB(doc.fileId).then(function(f) {
