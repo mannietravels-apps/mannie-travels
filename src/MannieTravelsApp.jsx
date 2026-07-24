@@ -260,6 +260,7 @@ function BottomNav(props) {
     {label:"Timeline", s:"timeline", icon:"📅"},
     {label:"Add", s:"addEvent", icon:"+", primary:true},
     {label:"Wishlist", s:"wishlist", icon:"✨"},
+    {label:"Docs", s:"documents", icon:"📁"},
     {label:"Glance", s:"glance", icon:"📋"},
     {label:"Settings", s:"settings", icon:"⚙️"}
   ];
@@ -704,7 +705,7 @@ function AddEditScreen(props) {
           </div>
  {days[selDay] && <p style={{marginTop:"8px",fontSize:"12px",fontFamily:"sans-serif",color:"rgb(249,115,22)"}}>Adding to: {days[selDay].label} — {fmtFull(days[selDay].date)}</p>}
         </div>
- <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden" style={{height:"calc(100vh - 290px)",display:"flex",flexDirection:"column",justifyContent:"space-between"}}>
+ <div className="bg-slate-900/60 rounded-2xl border border-slate-800/60 overflow-hidden">
  <button onClick={function() { setShowTypes(!showTypes); }} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-slate-800/30">
             <div className={CN8}>
               <span className={CN16}>🎯</span>
@@ -2196,6 +2197,116 @@ function WishlistScreen(props) {
   );
 }
 
+
+function DocumentsScreen(props) {
+  var trip = props.trip;
+  var days = props.days;
+  var go = props.go;
+  var stFiles = useState([]);
+  var files = stFiles[0]; var setFiles = stFiles[1];
+  var stLoading = useState(true);
+  var loading = stLoading[0]; var setLoading = stLoading[1];
+
+  useEffect(function() {
+    // Load all files from IndexedDB for this trip
+    var allDocs = [];
+    days.forEach(function(day) {
+      (day.events || []).forEach(function(ev) {
+        (ev.docs || []).forEach(function(d) {
+          if (d && d.id) {
+            allDocs.push({
+              fileId: d.id,
+              fileName: d.name,
+              fileType: d.type,
+              fileSize: d.size,
+              eventTitle: ev.title,
+              eventIcon: ev.icon,
+              dayLabel: day.label,
+              date: day.date
+            });
+          }
+        });
+      });
+    });
+    setFiles(allDocs);
+    setLoading(false);
+  }, []);
+
+  function openFile(doc) {
+    getFileIDB(doc.fileId).then(function(f) {
+      if (!f) { alert("File not found. Try re-attaching it to the event."); return; }
+      var win = window.open("", "_blank");
+      if (!win) return;
+      if (f.type && f.type.startsWith("image/")) {
+        win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+f.data+'" style="max-width:100%;max-height:100vh"/></body></html>');
+      } else if (f.type === "application/pdf") {
+        win.document.write('<html><body style="margin:0;height:100vh"><iframe src="'+f.data+'" style="width:100%;height:100%;border:none"></iframe></body></html>');
+      } else {
+        var a = win.document.createElement("a");
+        a.href = f.data; a.download = f.name;
+        win.document.body.appendChild(a); a.click();
+      }
+    }).catch(function() { alert("Could not open file."); });
+  }
+
+  function getIcon(type) {
+    if (!type) return "📄";
+    if (type.startsWith("image/")) return "🖼️";
+    if (type === "application/pdf") return "📋";
+    if (type.includes("word")) return "📝";
+    if (type.includes("excel") || type.includes("sheet")) return "📊";
+    return "📄";
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1048576) return Math.round(bytes/1024) + " KB";
+    return (bytes/1048576).toFixed(1) + " MB";
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column"}}>
+      <div style={{background:"linear-gradient(to bottom,rgb(15,23,42),rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
+          <button onClick={function(){go("timeline");}} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
+        </div>
+        <p style={{color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 2px"}}>{trip.name}</p>
+        <h1 style={{color:"white",fontSize:"22px",fontFamily:"Georgia,serif",fontWeight:"bold",margin:"0 0 4px"}}>📁 Documents</h1>
+        <p style={{color:"rgb(100,116,139)",fontSize:"12px",fontFamily:"sans-serif",margin:0}}>{files.length} file{files.length !== 1 ? "s" : ""} attached across all events</p>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 90px"}}>
+        {loading && <p style={{color:"rgb(100,116,139)",fontFamily:"sans-serif",textAlign:"center",padding:"40px"}}>Loading...</p>}
+        {!loading && files.length === 0 && (
+          <div style={{textAlign:"center",padding:"60px 20px"}}>
+            <div style={{fontSize:"48px",marginBottom:"12px"}}>📁</div>
+            <p style={{color:"rgb(100,116,139)",fontFamily:"sans-serif",fontSize:"14px"}}>No documents attached yet</p>
+            <p style={{color:"rgb(71,85,105)",fontFamily:"sans-serif",fontSize:"12px",marginTop:"4px"}}>Add files when creating or editing events</p>
+          </div>
+        )}
+        {!loading && files.length > 0 && (
+          <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+            {files.map(function(doc, i) {
+              return (
+                <div key={i} onClick={function(){openFile(doc);}}
+                  style={{background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"14px",padding:"14px",cursor:"pointer",display:"flex",gap:"12px",alignItems:"center"}}>
+                  <div style={{fontSize:"28px",flexShrink:0}}>{getIcon(doc.fileType)}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{color:"white",fontSize:"14px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.fileName}</div>
+                    <div style={{color:"rgb(249,115,22)",fontSize:"11px",fontFamily:"sans-serif",marginTop:"2px"}}>{doc.eventIcon} {doc.eventTitle}</div>
+                    <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif",marginTop:"1px"}}>{doc.dayLabel}{doc.fileSize ? " · " + formatSize(doc.fileSize) : ""}</div>
+                  </div>
+                  <div style={{color:"rgb(100,116,139)",fontSize:"20px",flexShrink:0}}>›</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <BottomNav active="documents" go={go} />
+    </div>
+  );
+}
+
 export default function MannieTravelsApp() {
   var stScreen = useState("dashboard");
   var screen = stScreen[0]; var setScreen = stScreen[1];
@@ -2325,5 +2436,6 @@ export default function MannieTravelsApp() {
  if (screen === "settings")  return <SettingsScreen  go={go} trip={trip} trips={trips} setTrips={setTrips} activeTripId={activeTripId} />;
  if (screen === "costs")     return <CostsScreen     go={go} trip={trip} days={days} />;
  if (screen === "wishlist")  return <WishlistScreen  go={go} trip={trip} setTrips={setTrips} />;
+ if (screen === "documents") return <DocumentsScreen go={go} trip={trip} days={days} />;
   return dashEl;
 }
