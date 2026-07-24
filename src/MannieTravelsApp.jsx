@@ -313,117 +313,63 @@ function PhotoEntry(props) {
     </label>
   );
 }
-// IndexedDB helpers for file storage
-var IDB_NAME = "mannie_files";
-var IDB_STORE = "files";
-function openIDB() {
-  return new Promise(function(resolve, reject) {
-    var req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = function(e) {
-      e.target.result.createObjectStore(IDB_STORE, { keyPath: "id" });
-    };
-    req.onsuccess = function(e) { resolve(e.target.result); };
-    req.onerror = function() { reject(req.error); };
-  });
-}
-function saveFileIDB(fileObj) {
-  return openIDB().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(IDB_STORE, "readwrite");
-      tx.objectStore(IDB_STORE).put(fileObj);
-      tx.oncomplete = function() { resolve(); };
-      tx.onerror = function() { reject(tx.error); };
-    });
-  });
-}
-function getFileIDB(id) {
-  return openIDB().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(IDB_STORE, "readonly");
-      var req = tx.objectStore(IDB_STORE).get(id);
-      req.onsuccess = function() { resolve(req.result); };
-      req.onerror = function() { reject(req.error); };
-    });
-  });
-}
-function deleteFileIDB(id) {
-  return openIDB().then(function(db) {
-    return new Promise(function(resolve, reject) {
-      var tx = db.transaction(IDB_STORE, "readwrite");
-      tx.objectStore(IDB_STORE).delete(id);
-      tx.oncomplete = function() { resolve(); };
-      tx.onerror = function() { reject(tx.error); };
-    });
-  });
-}
+// File storage: base64 stored in docs array
 
 function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
+  var stLoading = useState(false);
+  var loading = stLoading[0]; var setLoading = stLoading[1];
 
   function handleFiles(e) {
     if (!e.target.files || e.target.files.length === 0) return;
     var fileList = Array.from(e.target.files);
+    setLoading(true);
     var pending = fileList.length;
     var results = [];
     fileList.forEach(function(file) {
-      var fileId = "doc_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      var meta = { id: fileId, name: file.name, type: file.type, size: file.size };
       var reader = new FileReader();
+      var fname = file.name;
+      var ftype = file.type;
+      var fsize = file.size;
       reader.onload = function(evt) {
-        var fileObj = Object.assign({}, meta, { data: evt.target.result });
-        saveFileIDB(fileObj)
-          .then(function() {
-            results.push(meta);
-            pending--;
-            if (pending === 0) setDocs(function(prev) { return prev.concat(results); });
-          })
-          .catch(function() {
-            results.push(meta);
-            pending--;
-            if (pending === 0) setDocs(function(prev) { return prev.concat(results); });
-          });
+        results.push({ name: fname, type: ftype, size: fsize, data: evt.target.result });
+        pending--;
+        if (pending === 0) {
+          setDocs(function(prev) { return prev.concat(results); });
+          setLoading(false);
+        }
       };
       reader.onerror = function() {
-        results.push(meta);
+        results.push({ name: fname, type: ftype, size: fsize, data: null });
         pending--;
-        if (pending === 0) setDocs(function(prev) { return prev.concat(results); });
+        if (pending === 0) {
+          setDocs(function(prev) { return prev.concat(results); });
+          setLoading(false);
+        }
       };
       reader.readAsDataURL(file);
     });
     e.target.value = "";
   }
 
-  function removeDoc(doc, idx) {
-    if (doc && doc.id) deleteFileIDB(doc.id).catch(function() {});
+  function removeDoc(idx) {
     setDocs(docs.filter(function(_, j) { return j !== idx; }));
   }
 
   function openDoc(doc) {
-    if (!doc || !doc.id) return;
-    getFileIDB(doc.id).then(function(fileObj) {
-      if (!fileObj) return;
-      var win = window.open("", "_blank");
-      if (!win) return;
-      if (fileObj.type && fileObj.type.startsWith("image/")) {
-        win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + fileObj.data + '" style="max-width:100%;max-height:100vh" /></body></html>');
-      } else if (fileObj.type === "application/pdf") {
-        win.document.write('<html><body style="margin:0;height:100vh"><iframe src="' + fileObj.data + '" style="width:100%;height:100%;border:none"></iframe></body></html>');
-      } else {
-        var a = win.document.createElement("a");
-        a.href = fileObj.data;
-        a.download = fileObj.name;
-        win.document.body.appendChild(a);
-        a.click();
-      }
-    }).catch(function() { alert("Could not open file. Try re-attaching it."); });
-  }
-
-  function formatSize(bytes) {
-    if (!bytes) return "";
-    if (bytes < 1024) return bytes + "B";
-    if (bytes < 1048576) return Math.round(bytes/1024) + "KB";
-    return (bytes/1048576).toFixed(1) + "MB";
+    if (!doc.data) { alert("No file data saved."); return; }
+    var win = window.open("", "_blank");
+    if (!win) return;
+    if (doc.type && doc.type.startsWith("image/")) {
+      win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + doc.data + '" style="max-width:100%;max-height:100vh"/></body></html>');
+    } else if (doc.type === "application/pdf") {
+      win.document.write('<html><body style="margin:0;height:100vh"><iframe src="' + doc.data + '" style="width:100%;height:100%;border:none"></iframe></body></html>');
+    } else {
+      var a = win.document.createElement("a");
+      a.href = doc.data; a.download = doc.name;
+      win.document.body.appendChild(a); a.click();
+    }
   }
 
   function getIcon(type) {
@@ -431,33 +377,36 @@ function DocEntry(props) {
     if (type.startsWith("image/")) return "🖼️";
     if (type === "application/pdf") return "📋";
     if (type.includes("word")) return "📝";
-    if (type.includes("excel") || type.includes("sheet")) return "📊";
     return "📄";
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1048576) return Math.round(bytes/1024) + "KB";
+    return (bytes/1048576).toFixed(1) + "MB";
   }
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-      <label style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",background:"rgba(15,23,42,0.5)"}}>
-        📎 Attach Files
-        <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, photos</span>
-        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onChange={handleFiles} style={{display:"none"}} />
+      <label style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:loading?"rgb(249,115,22)":"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:loading?"not-allowed":"pointer",background:"rgba(15,23,42,0.5)",boxSizing:"border-box"}}>
+        {loading ? "⏳ Saving file..." : "📎 Attach Files"}
+        {!loading && <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, photos</span>}
+        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFiles} style={{display:"none"}} disabled={loading} />
       </label>
       {docs.length > 0 && (
         <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
           {docs.map(function(d, i) {
+            var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : d;
             var idx = i;
-            var docObj = typeof d === "string" ? { name: d, id: null } : d;
             return (
-              <div key={idx} onClick={function(e) { e.stopPropagation(); if (docObj.id) openDoc(docObj); }}
-                style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px",cursor:docObj.id ? "pointer" : "default"}}>
+              <div key={idx} onClick={function(e) { e.stopPropagation(); openDoc(docObj); }}
+                style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px",cursor:docObj.data?"pointer":"default"}}>
                 <span style={{fontSize:"20px",flexShrink:0}}>{getIcon(docObj.type)}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{docObj.name}</div>
-                  <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif"}}>
-                    {docObj.id ? "Tap to open" : "Name only"}{docObj.size ? " · " + formatSize(docObj.size) : ""}
-                  </div>
+                  <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif"}}>{docObj.data ? "Tap to open" : "Name only"}{docObj.size ? " · " + formatSize(docObj.size) : ""}</div>
                 </div>
-                <button onClick={function(e) { e.stopPropagation(); removeDoc(docObj, idx); }}
+                <button onClick={function(e) { e.stopPropagation(); removeDoc(idx); }}
                   style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",flexShrink:0}}>
                   Remove
                 </button>
@@ -469,6 +418,7 @@ function DocEntry(props) {
     </div>
   );
 }
+
 
 function SmartDatePicker(props) {
   var value = props.value;   // "YYYY-MM-DD" internally
@@ -2221,12 +2171,13 @@ function DocumentsScreen(props) {
     days.forEach(function(day) {
       (day.events || []).forEach(function(ev) {
         (ev.docs || []).forEach(function(d) {
-          if (d && d.id) {
+          if (d) {
+            var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : d;
             allDocs.push({
-              fileId: d.id,
-              fileName: d.name,
-              fileType: d.type,
-              fileSize: d.size,
+              fileName: docObj.name || "File",
+              fileType: docObj.type || "",
+              fileSize: docObj.size || 0,
+              data: docObj.data || null,
               eventTitle: ev.title,
               eventIcon: ev.icon,
               dayLabel: day.label,
@@ -2241,20 +2192,18 @@ function DocumentsScreen(props) {
   }, [days]);
 
   function openFile(doc) {
-    getFileIDB(doc.fileId).then(function(f) {
-      if (!f) { alert("File not found. Try re-attaching it to the event."); return; }
-      var win = window.open("", "_blank");
-      if (!win) return;
-      if (f.type && f.type.startsWith("image/")) {
-        win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+f.data+'" style="max-width:100%;max-height:100vh"/></body></html>');
-      } else if (f.type === "application/pdf") {
-        win.document.write('<html><body style="margin:0;height:100vh"><iframe src="'+f.data+'" style="width:100%;height:100%;border:none"></iframe></body></html>');
-      } else {
-        var a = win.document.createElement("a");
-        a.href = f.data; a.download = f.name;
-        win.document.body.appendChild(a); a.click();
-      }
-    }).catch(function() { alert("Could not open file."); });
+    if (!doc.data) { alert("No file data — try re-attaching to the event."); return; }
+    var win = window.open("", "_blank");
+    if (!win) return;
+    if (doc.fileType && doc.fileType.startsWith("image/")) {
+      win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+doc.data+'" style="max-width:100%;max-height:100vh"/></body></html>');
+    } else if (doc.fileType === "application/pdf") {
+      win.document.write('<html><body style="margin:0;height:100vh"><iframe src="'+doc.data+'" style="width:100%;height:100%;border:none"></iframe></body></html>');
+    } else {
+      var a = win.document.createElement("a");
+      a.href = doc.data; a.download = doc.fileName;
+      win.document.body.appendChild(a); a.click();
+    }
   }
 
   function getIcon(type) {
