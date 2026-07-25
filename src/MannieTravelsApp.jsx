@@ -1188,33 +1188,30 @@ function TimelineScreen(props) {
                           {ev.docs && ev.docs.length > 0 && (
                             <div className="space-y-1">
                               {ev.docs.map(function(d, di) {
-                                var docObj = typeof d === "string" ? {name:d,id:null} : d;
+                                var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : d;
                                 var icon = docObj.type && docObj.type.startsWith("image/") ? "🖼️" : docObj.type === "application/pdf" ? "📋" : docObj.type && docObj.type.includes("word") ? "📝" : "📄";
                                 return (
                                   <div key={di}
                                     onClick={function(e) {
                                       e.stopPropagation();
-                                      if (!docObj.id) return;
-                                      getFileIDB(docObj.id).then(function(f) {
-                                        if (!f) { alert("File not found. Try re-attaching."); return; }
-                                        var win = window.open("","_blank");
-                                        if (!win) return;
-                                        if (f.type && f.type.startsWith("image/")) {
-                                          win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+f.data+'" style="max-width:100%;max-height:100vh"/></body></html>');
-                                        } else if (f.type === "application/pdf") {
-                                          win.document.write('<html><body style="margin:0;height:100vh"><iframe src="'+f.data+'" style="width:100%;height:100%;border:none"></iframe></body></html>');
-                                        } else {
-                                          var a = win.document.createElement("a");
-                                          a.href = f.data; a.download = f.name;
-                                          win.document.body.appendChild(a); a.click();
-                                        }
-                                      }).catch(function() { alert("Could not open file."); });
+                                      if (!docObj.data) return;
+                                      var win = window.open("","_blank");
+                                      if (!win) return;
+                                      if (docObj.type && docObj.type.startsWith("image/")) {
+                                        win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+docObj.data+'" style="max-width:100%;max-height:100vh"/></body></html>');
+                                      } else if (docObj.type === "application/pdf") {
+                                        win.document.write('<html><body style="margin:0;height:100vh"><iframe src="'+docObj.data+'" style="width:100%;height:100%;border:none"></iframe></body></html>');
+                                      } else {
+                                        var a = win.document.createElement("a");
+                                        a.href = docObj.data; a.download = docObj.name;
+                                        win.document.body.appendChild(a); a.click();
+                                      }
                                     }}
-                                    style={{display:"flex",alignItems:"center",gap:"8px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"8px 12px",cursor:docObj.id?"pointer":"default"}}>
+                                    style={{display:"flex",alignItems:"center",gap:"8px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"8px 12px",cursor:docObj.data?"pointer":"default"}}>
                                     <span style={{fontSize:"16px"}}>{icon}</span>
                                     <div style={{flex:1,minWidth:0}}>
                                       <div style={{color:"white",fontSize:"12px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{docObj.name}</div>
-                                      {docObj.id && <div style={{color:"rgb(100,116,139)",fontSize:"10px",fontFamily:"sans-serif"}}>Tap to open{docObj.size ? " · " + (docObj.size > 1048576 ? (docObj.size/1048576).toFixed(1)+"MB" : Math.round(docObj.size/1024)+"KB") : ""}</div>}
+                                      <div style={{color:"rgb(100,116,139)",fontSize:"10px",fontFamily:"sans-serif"}}>{docObj.data ? "Tap to open" : "Name only"}{docObj.size ? " · " + (docObj.size > 1048576 ? (docObj.size/1048576).toFixed(1)+"MB" : Math.round(docObj.size/1024)+"KB") : ""}</div>
                                     </div>
                                   </div>
                                 );
