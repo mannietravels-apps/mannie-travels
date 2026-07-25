@@ -850,9 +850,10 @@ function AddEditScreen(props) {
           {docs.length > 0 && (
             <div className="space-y-2">
               {docs.map(function(d, i) {
+                var dname = typeof d === "string" ? d : (d && d.name ? d.name : "Document");
                 return (
  <div key={i} className="flex items-center justify-between bg-slate-800/60 border border-slate-700/40 rounded-xl px-3 py-2">
- <div className={CN7}><span>📄</span><span className={CN20}>{d}</span></div>
+ <div className={CN7}><span>📄</span><span className={CN20}>{dname}</span></div>
  <button onClick={function() { setDocs(docs.filter(function(_, j) { return j !== i; })); }} className="text-slate-500 hover:text-red-400 text-xs font-sans">Remove</button>
                   </div>
                 );
