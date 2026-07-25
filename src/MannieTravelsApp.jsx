@@ -258,8 +258,8 @@ function BottomNav(props) {
   var items = [
     {label:"Trips", s:"dashboard", icon:"🗺️"},
     {label:"Timeline", s:"timeline", icon:"📅"},
-    {label:"Add", s:"addEvent", icon:"+", primary:true},
     {label:"Wishlist", s:"wishlist", icon:"✨"},
+    {label:"Add", s:"addEvent", icon:"+", primary:true},
     {label:"Docs", s:"documents", icon:"📁"},
     {label:"Glance", s:"glance", icon:"📋"},
     {label:"Settings", s:"settings", icon:"⚙️"}
