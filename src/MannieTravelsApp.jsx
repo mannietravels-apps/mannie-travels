@@ -318,103 +318,35 @@ function PhotoEntry(props) {
 function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
-  var stLoading = useState(false);
-  var loading = stLoading[0]; var setLoading = stLoading[1];
-
   function handleFiles(e) {
-    if (!e.target.files || e.target.files.length === 0) return;
-    var fileList = Array.from(e.target.files);
-    setLoading(true);
-    var pending = fileList.length;
-    var results = [];
-    fileList.forEach(function(file) {
-      var reader = new FileReader();
-      var fname = file.name;
-      var ftype = file.type;
-      var fsize = file.size;
-      reader.onload = function(evt) {
-        results.push({ name: fname, type: ftype, size: fsize, data: evt.target.result });
-        pending--;
-        if (pending === 0) {
-          setDocs(function(prev) { return prev.concat(results); });
-          setLoading(false);
-        }
-      };
-      reader.onerror = function() {
-        results.push({ name: fname, type: ftype, size: fsize, data: null });
-        pending--;
-        if (pending === 0) {
-          setDocs(function(prev) { return prev.concat(results); });
-          setLoading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    if (!e.target.files) return;
+    var names = [];
+    for (var i = 0; i < e.target.files.length; i++) {
+      names.push({name: e.target.files[i].name, type: e.target.files[i].type, size: e.target.files[i].size, data: null});
+    }
+    setDocs(docs.concat(names));
     e.target.value = "";
   }
-
   function removeDoc(idx) {
     setDocs(docs.filter(function(_, j) { return j !== idx; }));
   }
-
-  function openDoc(doc) {
-    if (!doc.data) { alert("No file data saved."); return; }
-    var win = window.open("", "_blank");
-    if (!win) return;
-    if (doc.type && doc.type.startsWith("image/")) {
-      win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + doc.data + '" style="max-width:100%;max-height:100vh"/></body></html>');
-    } else if (doc.type === "application/pdf") {
-      win.document.write('<html><body style="margin:0;height:100vh"><iframe src="' + doc.data + '" style="width:100%;height:100%;border:none"></iframe></body></html>');
-    } else {
-      var a = win.document.createElement("a");
-      a.href = doc.data; a.download = doc.name;
-      win.document.body.appendChild(a); a.click();
-    }
-  }
-
-  function getIcon(type) {
-    if (!type) return "📄";
-    if (type.startsWith("image/")) return "🖼️";
-    if (type === "application/pdf") return "📋";
-    if (type.includes("word")) return "📝";
-    return "📄";
-  }
-
-  function formatSize(bytes) {
-    if (!bytes) return "";
-    if (bytes < 1048576) return Math.round(bytes/1024) + "KB";
-    return (bytes/1048576).toFixed(1) + "MB";
-  }
-
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-      <label style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:loading?"rgb(249,115,22)":"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:loading?"not-allowed":"pointer",background:"rgba(15,23,42,0.5)",boxSizing:"border-box"}}>
-        {loading ? "⏳ Saving file..." : "📎 Attach Files"}
-        {!loading && <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, photos</span>}
-        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFiles} style={{display:"none"}} disabled={loading} />
+      <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",background:"rgba(15,23,42,0.5)"}}>
+        📎 Attach Files
+        <input type="file" multiple onChange={handleFiles} style={{display:"none"}} />
       </label>
-      {docs.length > 0 && (
-        <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
-          {docs.map(function(d, i) {
-            var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : d;
-            var idx = i;
-            return (
-              <div key={idx} onClick={function(e) { e.stopPropagation(); openDoc(docObj); }}
-                style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px",cursor:docObj.data?"pointer":"default"}}>
-                <span style={{fontSize:"20px",flexShrink:0}}>{getIcon(docObj.type)}</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{docObj.name}</div>
-                  <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif"}}>{docObj.data ? "Tap to open" : "Name only"}{docObj.size ? " · " + formatSize(docObj.size) : ""}</div>
-                </div>
-                <button onClick={function(e) { e.stopPropagation(); removeDoc(idx); }}
-                  style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",flexShrink:0}}>
-                  Remove
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {docs.length > 0 && docs.map(function(d, i) {
+        var name = typeof d === "string" ? d : (d.name || "File");
+        var idx = i;
+        return (
+          <div key={idx} style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px"}}>
+            <span style={{fontSize:"18px"}}>📄</span>
+            <span style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+            <button onClick={function(e) { e.stopPropagation(); removeDoc(idx); }} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>Remove</button>
+          </div>
+        );
+      })}
     </div>
   );
 }
