@@ -318,35 +318,46 @@ function PhotoEntry(props) {
 function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
-  function handleFiles(e) {
-    if (!e.target.files || e.target.files.length === 0) return;
-    var names = [];
-    for (var i = 0; i < e.target.files.length; i++) {
-      names.push({name: e.target.files[i].name, type: e.target.files[i].type, size: e.target.files[i].size, data: null});
-    }
-    setDocs(function(prev) { return (prev || []).concat(names); });
-    e.target.value = "";
+  var stVal = useState("");
+  var val = stVal[0]; var setVal = stVal[1];
+
+  function add() {
+    var v = val.trim();
+    if (!v) return;
+    setDocs(function(prev) { return (prev||[]).concat([{name:v,type:"ref",size:0,data:null}]); });
+    setVal("");
   }
+
   function removeDoc(idx) {
-    setDocs(docs.filter(function(_, j) { return j !== idx; }));
+    setDocs(function(prev) { return prev.filter(function(_,j){return j!==idx;}); });
   }
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-      <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",background:"rgba(15,23,42,0.5)"}}>
-        📎 Attach Files
-        <input type="file" multiple onChange={handleFiles} style={{display:"none"}} />
-      </label>
-      {docs.length > 0 && docs.map(function(d, i) {
-        var name = typeof d === "string" ? d : (d.name || "File");
+      <div style={{display:"flex",gap:"8px"}}>
+        <input
+          type="text"
+          value={val}
+          onChange={function(e){setVal(e.target.value);}}
+          onKeyDown={function(e){if(e.key==="Enter")add();}}
+          placeholder="Doc name, booking ref, or Google Drive link..."
+          style={{flex:1,background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",outline:"none"}}
+        />
+        <button onClick={add} style={{background:"rgb(249,115,22)",border:"none",borderRadius:"10px",padding:"10px 14px",color:"white",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"600"}}>Add</button>
+      </div>
+      {(docs||[]).length > 0 && (docs||[]).map(function(d,i){
+        var name = typeof d==="string"?d:(d&&d.name?d.name:"Document");
+        var isLink = name.startsWith("http");
         var idx = i;
         return (
-          <div key={idx} style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px"}}>
-            <span style={{fontSize:"18px"}}>📄</span>
-            <span style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
-            <button onClick={function(e) { e.stopPropagation(); removeDoc(idx); }} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>Remove</button>
+          <div key={idx} style={{display:"flex",alignItems:"center",gap:"8px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px"}}>
+            <span style={{fontSize:"16px"}}>{isLink?"🔗":"📄"}</span>
+            <span onClick={function(){if(isLink)window.open(name,"_blank");}} style={{color:isLink?"rgb(147,197,253)":"white",fontSize:"12px",fontFamily:"sans-serif",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",cursor:isLink?"pointer":"default",textDecoration:isLink?"underline":"none"}}>{name}</span>
+            <button onClick={function(e){e.stopPropagation();removeDoc(idx);}} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",flexShrink:0}}>✕</button>
           </div>
         );
       })}
+      <p style={{color:"rgb(71,85,105)",fontSize:"11px",fontFamily:"sans-serif",margin:0}}>Tip: paste a Google Drive or Dropbox link to attach files</p>
     </div>
   );
 }
