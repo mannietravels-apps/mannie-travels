@@ -319,12 +319,12 @@ function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
   function handleFiles(e) {
-    if (!e.target.files) return;
+    if (!e.target.files || e.target.files.length === 0) return;
     var names = [];
     for (var i = 0; i < e.target.files.length; i++) {
       names.push({name: e.target.files[i].name, type: e.target.files[i].type, size: e.target.files[i].size, data: null});
     }
-    setDocs(docs.concat(names));
+    setDocs(function(prev) { return (prev || []).concat(names); });
     e.target.value = "";
   }
   function removeDoc(idx) {
