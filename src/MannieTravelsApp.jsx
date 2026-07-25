@@ -318,14 +318,68 @@ function PhotoEntry(props) {
 function DocEntry(props) {
   var docs = props.docs;
   var setDocs = props.setDocs;
-  var stVal = useState("");
-  var val = stVal[0]; var setVal = stVal[1];
+  var stLoading = useState(false);
+  var loading = stLoading[0]; var setLoading = stLoading[1];
 
-  function add() {
-    var v = val.trim();
-    if (!v) return;
-    setDocs(function(prev) { return (prev||[]).concat([{name:v,type:"ref",size:0,data:null}]); });
-    setVal("");
+  function handleFiles(e) {
+    if (!e.target.files || e.target.files.length === 0) return;
+    var fileList = Array.from(e.target.files);
+    setLoading(true);
+    var pending = fileList.length;
+    var results = [];
+    fileList.forEach(function(file) {
+      var reader = new FileReader();
+      var fname = file.name;
+      var ftype = file.type;
+      var fsize = file.size;
+      reader.onload = function(evt) {
+        results.push({ name: fname, type: ftype, size: fsize, data: evt.target.result });
+        pending--;
+        if (pending === 0) {
+          setDocs(function(prev) { return (prev||[]).concat(results); });
+          setLoading(false);
+        }
+      };
+      reader.onerror = function() {
+        results.push({ name: fname, type: ftype, size: fsize, data: null });
+        pending--;
+        if (pending === 0) {
+          setDocs(function(prev) { return (prev||[]).concat(results); });
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  }
+
+  function openDoc(doc) {
+    if (!doc || !doc.data) return;
+    var win = window.open("", "_blank");
+    if (!win) return;
+    if (doc.type && doc.type.startsWith("image/")) {
+      win.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + doc.data + '" style="max-width:100%;max-height:100vh"/></body></html>');
+    } else if (doc.type === "application/pdf") {
+      win.document.write('<html><body style="margin:0;height:100vh"><iframe src="' + doc.data + '" style="width:100%;height:100%;border:none"></iframe></body></html>');
+    } else {
+      var a = win.document.createElement("a");
+      a.href = doc.data; a.download = doc.name;
+      win.document.body.appendChild(a); a.click();
+    }
+  }
+
+  function getIcon(type) {
+    if (!type) return "📄";
+    if (type.startsWith("image/")) return "🖼️";
+    if (type === "application/pdf") return "📋";
+    if (type.includes("word")) return "📝";
+    return "📄";
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1048576) return Math.round(bytes/1024) + "KB";
+    return (bytes/1048576).toFixed(1) + "MB";
   }
 
   function removeDoc(idx) {
@@ -334,30 +388,33 @@ function DocEntry(props) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-      <div style={{display:"flex",gap:"8px"}}>
-        <input
-          type="text"
-          value={val}
-          onChange={function(e){setVal(e.target.value);}}
-          onKeyDown={function(e){if(e.key==="Enter")add();}}
-          placeholder="Doc name, booking ref, or Google Drive link..."
-          style={{flex:1,background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",outline:"none"}}
-        />
-        <button onClick={add} style={{background:"rgb(249,115,22)",border:"none",borderRadius:"10px",padding:"10px 14px",color:"white",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"600"}}>Add</button>
-      </div>
-      {(docs||[]).length > 0 && (docs||[]).map(function(d,i){
-        var name = typeof d==="string"?d:(d&&d.name?d.name:"Document");
-        var isLink = name.startsWith("http");
-        var idx = i;
-        return (
-          <div key={idx} style={{display:"flex",alignItems:"center",gap:"8px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px"}}>
-            <span style={{fontSize:"16px"}}>{isLink?"🔗":"📄"}</span>
-            <span onClick={function(){if(isLink)window.open(name,"_blank");}} style={{color:isLink?"rgb(147,197,253)":"white",fontSize:"12px",fontFamily:"sans-serif",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",cursor:isLink?"pointer":"default",textDecoration:isLink?"underline":"none"}}>{name}</span>
-            <button onClick={function(e){e.stopPropagation();removeDoc(idx);}} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",flexShrink:0}}>✕</button>
-          </div>
-        );
-      })}
-      <p style={{color:"rgb(71,85,105)",fontSize:"11px",fontFamily:"sans-serif",margin:0}}>Tip: paste a Google Drive or Dropbox link to attach files</p>
+      <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:loading?"rgb(249,115,22)":"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:loading?"default":"pointer",background:"rgba(15,23,42,0.5)"}}>
+        {loading ? "⏳ Saving..." : "📎 Attach Files"}
+        {!loading && <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, images</span>}
+        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFiles} style={{display:"none"}} disabled={loading} />
+      </label>
+      {(docs||[]).length > 0 && (
+        <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+          {(docs||[]).map(function(d, i) {
+            var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : (d||{});
+            var idx = i;
+            return (
+              <div key={idx} onClick={function(e){e.stopPropagation();openDoc(docObj);}}
+                style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(30,41,59,0.7)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"10px",padding:"10px 12px",cursor:docObj.data?"pointer":"default"}}>
+                <span style={{fontSize:"18px",flexShrink:0}}>{getIcon(docObj.type)}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{color:"white",fontSize:"13px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{docObj.name||"File"}</div>
+                  <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif"}}>{docObj.data?"Tap to open":"Name only"}{docObj.size?" · "+formatSize(docObj.size):""}</div>
+                </div>
+                <button onClick={function(e){e.stopPropagation();removeDoc(idx);}}
+                  style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"4px 8px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer",flexShrink:0}}>
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
