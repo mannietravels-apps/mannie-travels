@@ -2434,6 +2434,14 @@ function DocumentsScreen(props) {
 }
 
 export default function MannieTravelsApp() {
+  useEffect(function() {
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
+    return function() {
+      document.body.style.overscrollBehavior = "";
+      document.documentElement.style.overscrollBehavior = "";
+    };
+  }, []);
   var stScreen = useState("dashboard");
   var screen = stScreen[0]; var setScreen = stScreen[1];
   var stTripId = useState(function() {
