@@ -320,37 +320,45 @@ function DocEntry(props) {
   var setDocs = props.setDocs;
   var stLoading = useState(false);
   var loading = stLoading[0]; var setLoading = stLoading[1];
+  var stPending = useState(null);
+  var pending = stPending[0]; var setPending = stPending[1];
+  var stCustomName = useState("");
+  var customName = stCustomName[0]; var setCustomName = stCustomName[1];
 
   function handleFiles(e) {
     if (!e.target.files || e.target.files.length === 0) return;
-    var fileList = Array.from(e.target.files);
+    var file = e.target.files[0];
     setLoading(true);
-    var pending = fileList.length;
-    var results = [];
-    fileList.forEach(function(file) {
-      var reader = new FileReader();
-      var fname = file.name;
-      var ftype = file.type;
-      var fsize = file.size;
-      reader.onload = function(evt) {
-        results.push({ name: fname, type: ftype, size: fsize, data: evt.target.result });
-        pending--;
-        if (pending === 0) {
-          setDocs(function(prev) { return (prev||[]).concat(results); });
-          setLoading(false);
-        }
-      };
-      reader.onerror = function() {
-        results.push({ name: fname, type: ftype, size: fsize, data: null });
-        pending--;
-        if (pending === 0) {
-          setDocs(function(prev) { return (prev||[]).concat(results); });
-          setLoading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    var reader = new FileReader();
+    var fname = file.name;
+    var ftype = file.type;
+    var fsize = file.size;
+    reader.onload = function(evt) {
+      setPending({ name: fname, type: ftype, size: fsize, data: evt.target.result });
+      setCustomName(fname.replace(/\.[^/.]+$/, ""));
+      setLoading(false);
+    };
+    reader.onerror = function() {
+      setPending({ name: fname, type: ftype, size: fsize, data: null });
+      setCustomName(fname.replace(/\.[^/.]+$/, ""));
+      setLoading(false);
+    };
+    reader.readAsDataURL(file);
     e.target.value = "";
+  }
+
+  function confirmAdd() {
+    if (!pending) return;
+    var ext = pending.name.includes(".") ? pending.name.slice(pending.name.lastIndexOf(".")) : "";
+    var finalName = (customName.trim() || pending.name) + (customName.trim() && !customName.trim().includes(".") ? ext : "");
+    setDocs(function(prev) { return (prev||[]).concat([{ name: finalName, type: pending.type, size: pending.size, data: pending.data }]); });
+    setPending(null);
+    setCustomName("");
+  }
+
+  function cancelAdd() {
+    setPending(null);
+    setCustomName("");
   }
 
   function openDoc(doc) {
@@ -388,11 +396,38 @@ function DocEntry(props) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-      <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:loading?"rgb(249,115,22)":"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:loading?"default":"pointer",background:"rgba(15,23,42,0.5)"}}>
-        {loading ? "⏳ Saving..." : "📎 Attach Files"}
-        {!loading && <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, images</span>}
-        <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFiles} style={{display:"none"}} disabled={loading} />
-      </label>
+      {!pending && (
+        <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"14px",borderRadius:"12px",border:"2px dashed rgba(71,85,105,0.6)",color:loading?"rgb(249,115,22)":"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:loading?"default":"pointer",background:"rgba(15,23,42,0.5)"}}>
+          {loading ? "⏳ Reading file..." : "📎 Attach File"}
+          {!loading && <span style={{fontSize:"11px",color:"rgb(71,85,105)"}}>Tickets, passports, PDFs, images</span>}
+          <input type="file" accept="image/*,.pdf,.doc,.docx,.txt" onChange={handleFiles} style={{display:"none"}} disabled={loading} />
+        </label>
+      )}
+      {pending && (
+        <div style={{background:"rgba(30,41,59,0.9)",border:"1px solid rgba(249,115,22,0.4)",borderRadius:"12px",padding:"14px",display:"flex",flexDirection:"column",gap:"10px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            <span style={{fontSize:"24px"}}>{getIcon(pending.type)}</span>
+            <div>
+              <div style={{color:"rgb(148,163,184)",fontSize:"11px",fontFamily:"sans-serif"}}>Original: {pending.name}</div>
+              <div style={{color:"rgb(100,116,139)",fontSize:"10px",fontFamily:"sans-serif"}}>{formatSize(pending.size)}</div>
+            </div>
+          </div>
+          <div>
+            <div style={{color:"rgb(148,163,184)",fontSize:"11px",fontFamily:"sans-serif",marginBottom:"4px"}}>Name this file:</div>
+            <input
+              type="text"
+              value={customName}
+              onChange={function(e){setCustomName(e.target.value);}}
+              placeholder="e.g. Flight Ticket, Hotel Voucher, Passport..."
+              style={{width:"100%",background:"rgba(15,23,42,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"10px",padding:"10px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",outline:"none",boxSizing:"border-box"}}
+            />
+          </div>
+          <div style={{display:"flex",gap:"8px"}}>
+            <button onClick={cancelAdd} style={{flex:1,padding:"10px",background:"transparent",border:"1px solid rgba(71,85,105,0.5)",borderRadius:"10px",color:"rgb(148,163,184)",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer"}}>Cancel</button>
+            <button onClick={confirmAdd} style={{flex:2,padding:"10px",background:"rgb(249,115,22)",border:"none",borderRadius:"10px",color:"white",fontSize:"13px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"600"}}>Save File</button>
+          </div>
+        </div>
+      )}
       {(docs||[]).length > 0 && (
         <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
           {(docs||[]).map(function(d, i) {
