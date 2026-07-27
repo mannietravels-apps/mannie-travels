@@ -1659,31 +1659,31 @@ function GlanceScreen(props) {
             </button>
 
             <button onClick={function() {
-              var html = buildHtmlEmail(hideCosts);
-              var newWin = window.open("", "_blank");
-              if (newWin) {
-                var toolbar = '<div style="position:fixed;top:0;left:0;right:0;background:#0f172a;padding:10px 16px;display:flex;gap:8px;align-items:center;z-index:999;border-bottom:1px solid #1e293b">' +
-                  '<span style="color:#f97316;font-family:sans-serif;font-size:14px;font-weight:bold;flex:1">📋 ' + trip.name + ' Itinerary</span>' +
-                  '<button onclick="(function(){var b=document.createElement('a');b.href='data:text/html;charset=utf-8,'+encodeURIComponent(document.querySelector('#itin').outerHTML);b.download='' + trip.name.replace(/[^a-z0-9]/gi,'_') + '_itinerary.html';b.click();})()" style="background:#3b82f6;color:white;padding:6px 12px;border-radius:8px;border:none;font-family:sans-serif;font-size:13px;cursor:pointer">⬇️ Download</button>' +
-                  '<button onclick="window.print()" style="background:#334155;color:white;padding:6px 12px;border-radius:8px;border:none;font-family:sans-serif;font-size:13px;cursor:pointer">🖨️ Print</button>' +
-                  '<button onclick="window.close()" style="background:transparent;color:#94a3b8;padding:6px 10px;border-radius:8px;border:1px solid #475569;font-family:sans-serif;font-size:13px;cursor:pointer">✕</button>' +
-                  '</div>';
-                newWin.document.write(toolbar + '<div id="itin" style="margin-top:52px">' + html + '</div>');
-                newWin.document.close();
+              var text = buildText(hideCosts);
+              var subject = trip.name + " Itinerary";
+              try {
+                if (navigator.share) {
+                  navigator.share({ title: subject, text: text });
+                } else {
+                  window.location.href = "mailto:?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(text);
+                }
+              } catch(err) {
+                window.location.href = "mailto:?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(text);
               }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
-              ✉️ Email
+              ✉️ Share
             </button>
             <button onClick={function() {
-              var text = buildText(hideCosts);
-              var win = window.open("", "_blank");
-              if (win) {
-                win.document.write("<html><head><title>" + trip.name + " Itinerary</title><style>body{font-family:Georgia,serif;padding:32px;max-width:700px;margin:0 auto;color:#111;line-height:1.6}pre{white-space:pre-wrap;font-family:Georgia,serif;font-size:14px}</style></head><body><pre>" + text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;") + "</pre></body></html>");
-                win.document.close();
-                setTimeout(function() { win.print(); }, 400);
+              var html = buildHtmlEmail(hideCosts);
+              var blob = new Blob([html], {type:"text/html"});
+              var url = URL.createObjectURL(blob);
+              var win = window.open(url, "_blank");
+              if (!win) {
+                var a = document.createElement("a");
+                a.href = url; a.download = "itinerary.html"; a.click();
               }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
-              🖨️ Print
+              📋 View HTML
             </button>
           </div>
         </div>
@@ -2537,6 +2537,6 @@ export default function MannieTravelsApp() {
  if (screen === "settings")  return <SettingsScreen  go={go} trip={trip} trips={trips} setTrips={setTrips} activeTripId={activeTripId} />;
  if (screen === "costs")     return <CostsScreen     go={go} trip={trip} days={days} />;
  if (screen === "wishlist")  return <WishlistScreen  go={go} trip={trip} setTrips={setTrips} />;
- if (screen === "documents") return <DocumentsScreen go={go} trip={trip} days={days} />;
+ if (screen === "documents") return <DocumentsScreen go={go} trip={trip} days={days} setTrips={setTrips} />;
   return dashEl;
 }
