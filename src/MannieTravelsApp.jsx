@@ -1659,6 +1659,20 @@ function GlanceScreen(props) {
             </button>
 
             <button onClick={function() {
+              var html = buildHtmlEmail(hideCosts);
+              var blob = new Blob([html], {type:"text/html"});
+              var url = URL.createObjectURL(blob);
+              var win = window.open(url, "_blank");
+              if (!win) {
+                var a = document.createElement("a");
+                a.href = url;
+                a.download = "itinerary.html";
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              }
+            }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
+              📋 Itinerary
+            </button>
+            <button onClick={function() {
               var text = buildText(hideCosts);
               var subject = trip.name + " Itinerary";
               try {
@@ -2343,17 +2357,19 @@ function DocumentsScreen(props) {
   }
 
   return (
-    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column",position:"relative"}}>
-      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url("+trip.photo+")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
-      <div style={{background:"linear-gradient(to bottom,rgb(15,23,42),rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)",position:"relative",zIndex:1}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
-          <button onClick={function(){go("timeline");}} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
+    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column"}}>
+      <div style={{position:"relative",overflow:"hidden"}}>
+        {trip && trip.photo && <div style={{position:"absolute",inset:0,backgroundImage:"url("+trip.photo+")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.3}} />}
+        <div style={{position:"relative",background:trip&&trip.photo?"linear-gradient(to bottom,rgba(15,23,42,0.5),rgb(15,23,42))":"linear-gradient(to bottom,rgb(15,23,42),rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
+            <button onClick={function(){go("timeline");}} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
+          </div>
+          <p style={{color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 2px"}}>{trip.name}</p>
+          <h1 style={{color:"white",fontSize:"22px",fontFamily:"Georgia,serif",fontWeight:"bold",margin:"0 0 4px"}}>📁 Documents</h1>
+          <p style={{color:"rgb(100,116,139)",fontSize:"12px",fontFamily:"sans-serif",margin:0}}>{files.length} file{files.length !== 1 ? "s" : ""} across all events</p>
         </div>
-        <p style={{color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 2px"}}>{trip.name}</p>
-        <h1 style={{color:"white",fontSize:"22px",fontFamily:"Georgia,serif",fontWeight:"bold",margin:"0 0 4px"}}>📁 Documents</h1>
-        <p style={{color:"rgb(100,116,139)",fontSize:"12px",fontFamily:"sans-serif",margin:0}}>{files.length} file{files.length !== 1 ? "s" : ""} across all events</p>
       </div>
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 90px",position:"relative",zIndex:1}}>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 90px"}}>
         {loading && <p style={{color:"rgb(100,116,139)",fontFamily:"sans-serif",textAlign:"center",padding:"40px"}}>Loading...</p>}
         {!loading && files.length === 0 && (
           <div style={{textAlign:"center",padding:"60px 20px"}}>
