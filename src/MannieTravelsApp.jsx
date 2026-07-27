@@ -1537,60 +1537,91 @@ function GlanceScreen(props) {
     return lines.join("\n");
   }
   function buildHtmlEmail(hc) {
-    var sym = "A$";
-    var rows = "";
-    var grandTotal = 0;
-    for (var di = 0; di < days.length; di++) {
-      var day = days[di];
-      var dayColors = ["#f97316","#3b82f6","#8b5cf6","#10b981","#ec4899","#f59e0b","#06b6d4","#84cc16","#ef4444","#6366f1","#14b8a6","#f97316","#3b82f6","#8b5cf6","#10b981","#ec4899"];
-              var dc = dayColors[di % dayColors.length];
-              rows += '<tr><td colspan="5" style="background:rgba(' + (di%2===0?'30,41,59':'15,23,42') + ',0.9);color:' + dc + ';font-weight:bold;padding:10px 12px;font-size:14px;border-top:2px solid ' + dc + '">' + day.label + ' &mdash; ' + fmtFull(day.date) + '</td></tr>';
-      if (day.events.length === 0) {
-        rows += '<tr><td colspan="5" style="padding:8px 12px;color:#64748b;font-style:italic">No events planned</td></tr>';
+    var dayColors = ["#7c3aed","#0369a1","#065f46","#9a3412","#be185d","#b45309","#0e7490","#3f6212","#991b1b","#1e40af"];
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + trip.name + ' Itinerary</title></head>';
+    html += '<body style="margin:0;padding:0;background:#f1f5f9;font-family:Georgia,serif">';
+    html += '<div style="max-width:680px;margin:0 auto;padding:0 0 40px">';
+    
+    // Header
+    html += '<div style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:40px 32px;text-align:center">';
+    html += '<h1 style="color:#f97316;font-size:32px;margin:0 0 6px;letter-spacing:1px">' + trip.name + '</h1>';
+    html += '<p style="color:#94a3b8;font-size:16px;margin:0 0 4px">' + trip.dests.join(' • ') + '</p>';
+    if (trip.start) {
+      html += '<p style="color:#64748b;font-size:13px;margin:4px 0 0">' + fmtShort(trip.start) + ' – ' + fmtShort(trip.end) + ' • ' + days.length + ' days</p>';
+    }
+    html += '</div>';
+
+    // Days
+    days.forEach(function(day, di) {
+      var color = dayColors[di % dayColors.length];
+      html += '<div style="margin:24px 16px 0;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">';
+      html += '<div style="background:' + color + ';padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
+      html += '<div style="color:white;font-size:16px;font-weight:bold">' + day.label + '</div>';
+      html += '<div style="color:rgba(255,255,255,0.8);font-size:13px">' + fmtFull(day.date) + '</div>';
+      html += '</div>';
+
+      if (!day.events || day.events.length === 0) {
+        html += '<div style="background:white;padding:16px 20px;color:#94a3b8;font-style:italic;font-size:13px">No events planned</div>';
       } else {
-        for (var ei = 0; ei < day.events.length; ei++) {
-          var ev = day.events[ei];
+        day.events.forEach(function(ev, ei) {
+          var isLast = ei === day.events.length - 1;
           var evSym = SYM[ev.cur] || ev.cur;
-          grandTotal += ev.cost || 0;
-          var timeStr = ev.dep && ev.dep !== "TBD" ? ev.dep : "";
-          if (ev.arr && ev.type === "Flight") timeStr += " &rarr; " + ev.arr;
-          var costStr = ev.cost > 0 && !hc ? evSym + ev.cost.toLocaleString() + " " + ev.cur : "";
-          var details = "";
-          if (ev.dur) details += ev.dur;
-          if (ev.ref) details += (details?" &bull; ":"") + "Ref: " + ev.ref;
-          if (ev.aircraft) details += (details?" &bull; ":"") + ev.aircraft;
-          if (ev.addr) details += (details?"<br>":"") + "📍 " + ev.addr;
-          if (ev.notes) details += (details?"<br>":"") + "📝 " + ev.notes;
-          rows += '<tr style="border-bottom:1px solid #1e293b">' +
-            '<td style="padding:8px 12px;font-size:16px;width:36px">' + ev.icon + '</td>' +
-            '<td style="padding:8px 12px;color:#f1f5f9;font-weight:600;font-size:13px">' + ev.title + '</td>' +
-            '<td style="padding:8px 12px;color:#94a3b8;font-size:12px">' + timeStr + '</td>' +
-            '<td style="padding:8px 12px;color:#94a3b8;font-size:12px">' + details + '</td>' +
-            '<td style="padding:8px 12px;color:#4ade80;font-weight:bold;font-size:13px;text-align:right">' + costStr + '</td>' +
-            '</tr>';
-        }
+          html += '<div style="background:white;padding:16px 20px;' + (!isLast ? 'border-bottom:1px solid #e2e8f0' : '') + '">';
+          html += '<div style="display:flex;align-items:flex-start;gap:12px">';
+          html += '<div style="font-size:24px;line-height:1;flex-shrink:0">' + ev.icon + '</div>';
+          html += '<div style="flex:1">';
+          html += '<div style="font-size:15px;font-weight:bold;color:#0f172a;margin-bottom:4px">' + ev.title + '</div>';
+          
+          // Time row
+          if (ev.dep && ev.dep !== "TBD") {
+            html += '<div style="color:#f97316;font-size:13px;margin-bottom:4px">🕐 ' + ev.dep;
+            if (ev.arr && ev.type === "Flight") html += ' → ' + ev.arr;
+            if (ev.dur) html += ' (' + ev.dur + ')';
+            html += '</div>';
+          }
+          
+          // Address
+          if (ev.addr) {
+            html += '<div style="color:#475569;font-size:12px;margin-bottom:3px">📍 ' + ev.addr + '</div>';
+          }
+          
+          // Ref / Aircraft
+          if (ev.ref) html += '<div style="color:#64748b;font-size:12px;margin-bottom:3px">🎫 Ref: ' + ev.ref + '</div>';
+          if (ev.aircraft) html += '<div style="color:#64748b;font-size:12px;margin-bottom:3px">✈️ ' + ev.aircraft + '</div>';
+          
+          // Notes
+          if (ev.note) html += '<div style="color:#64748b;font-size:12px;margin-bottom:3px;font-style:italic">📝 ' + ev.note + '</div>';
+          
+          // Cost
+          if (ev.cost > 0 && !hc) {
+            html += '<div style="margin-top:6px"><span style="background:#f0fdf4;color:#15803d;font-weight:bold;font-size:13px;padding:2px 10px;border-radius:20px;border:1px solid #bbf7d0">' + evSym + ev.cost.toLocaleString() + ' ' + ev.cur + '</span></div>';
+          }
+          
+          html += '</div>';
+          html += '</div>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+    });
+
+    // Total cost summary
+    if (!hc) {
+      var total = days.reduce(function(s,d) { return s + (d.events||[]).reduce(function(ss,e) { return ss+(e.cost||0); },0); }, 0);
+      if (total > 0) {
+        html += '<div style="margin:24px 16px 0;background:#0f172a;border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center">';
+        html += '<span style="color:#94a3b8;font-size:14px">Total Estimated Cost</span>';
+        html += '<span style="color:#4ade80;font-size:20px;font-weight:bold">A$' + total.toLocaleString() + '</span>';
+        html += '</div>';
       }
     }
-    var totalRow = !hc ? '<tr><td colspan="4" style="padding:12px;color:#94a3b8;font-size:13px;border-top:2px solid #334155">Total Spent</td><td style="padding:12px;color:#4ade80;font-weight:bold;font-size:15px;text-align:right;border-top:2px solid #334155">A$' + grandTotal.toLocaleString() + '</td></tr>' : '';
-    return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#0f172a;font-family:Georgia,serif">' +
-      '<div style="max-width:680px;margin:0 auto;padding:24px">' +
-      '<div style="background:#1e293b;border-radius:12px;padding:20px 24px;margin-bottom:16px">' +
-      '<h1 style="color:#f97316;font-size:24px;margin:0 0 4px">' + trip.name + '</h1>' +
-      '<p style="color:#94a3b8;margin:0;font-size:14px">' + trip.dests.join(" &bull; ") + '</p>' +
-      (trip.start ? '<p style="color:#94a3b8;margin:4px 0 0;font-size:13px">' + fmtShort(trip.start) + ' &ndash; ' + fmtShort(trip.end) + ' &bull; ' + days.length + ' days</p>' : '') +
-      '</div>' +
-      '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:12px;overflow:hidden;border:1px solid #1e293b">' +
-      '<thead><tr style="background:#1e293b">' +
-      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left;width:36px"></th>' +
-      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left">EVENT</th>' +
-      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left">TIME</th>' +
-      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:left">DETAILS</th>' +
-      '<th style="padding:10px 12px;color:#64748b;font-size:11px;text-align:right">' + (!hc ? 'COST' : '') + '</th>' +
-      '</tr></thead>' +
-      '<tbody>' + rows + totalRow + '</tbody>' +
-      '</table>' +
-      '<p style="color:#475569;font-size:11px;text-align:center;margin-top:16px">Generated by Mannie Travels</p>' +
-      '</div></body></html>';
+
+    // Footer
+    html += '<div style="text-align:center;padding:32px 20px 0">';
+    html += '<p style="color:#94a3b8;font-size:12px;margin:0">Generated by <strong style="color:#f97316">Mannie Travels</strong> • mannie-travels.vercel.app</p>';
+    html += '</div>';
+    html += '</div></body></html>';
+    return html;
   }
 
   var stHideCosts = useState(false);
@@ -1629,16 +1660,15 @@ function GlanceScreen(props) {
 
             <button onClick={function() {
               var html = buildHtmlEmail(hideCosts);
-              var subject = trip.name + " Itinerary";
-              var text = buildText(hideCosts);
               var newWin = window.open("", "_blank");
               if (newWin) {
-                var shareBtn = '<div style="position:fixed;top:0;left:0;right:0;background:#1e293b;padding:12px 16px;display:flex;gap:8px;align-items:center;z-index:999">' +
-                  '<a href="mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text) + '" style="background:#f97316;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:bold">✉️ Send Email</a>' +
-                  '<button onclick="window.print()" style="background:#334155;color:white;padding:8px 16px;border-radius:8px;border:none;font-family:sans-serif;font-size:14px;cursor:pointer">🖨️ Print</button>' +
-                  '<button onclick="window.close()" style="background:transparent;color:#94a3b8;padding:8px 12px;border-radius:8px;border:1px solid #475569;font-family:sans-serif;font-size:14px;cursor:pointer">✕ Close</button>' +
-                  '</div><div style="margin-top:56px">';
-                newWin.document.write(shareBtn + html + '</div>');
+                var toolbar = '<div style="position:fixed;top:0;left:0;right:0;background:#0f172a;padding:10px 16px;display:flex;gap:8px;align-items:center;z-index:999;border-bottom:1px solid #1e293b">' +
+                  '<span style="color:#f97316;font-family:sans-serif;font-size:14px;font-weight:bold;flex:1">📋 ' + trip.name + ' Itinerary</span>' +
+                  '<button onclick="(function(){var b=document.createElement('a');b.href='data:text/html;charset=utf-8,'+encodeURIComponent(document.querySelector('#itin').outerHTML);b.download='' + trip.name.replace(/[^a-z0-9]/gi,'_') + '_itinerary.html';b.click();})()" style="background:#3b82f6;color:white;padding:6px 12px;border-radius:8px;border:none;font-family:sans-serif;font-size:13px;cursor:pointer">⬇️ Download</button>' +
+                  '<button onclick="window.print()" style="background:#334155;color:white;padding:6px 12px;border-radius:8px;border:none;font-family:sans-serif;font-size:13px;cursor:pointer">🖨️ Print</button>' +
+                  '<button onclick="window.close()" style="background:transparent;color:#94a3b8;padding:6px 10px;border-radius:8px;border:1px solid #475569;font-family:sans-serif;font-size:13px;cursor:pointer">✕</button>' +
+                  '</div>';
+                newWin.document.write(toolbar + '<div id="itin" style="margin-top:52px">' + html + '</div>');
                 newWin.document.close();
               }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
@@ -2193,17 +2223,21 @@ function DocumentsScreen(props) {
   var trip = props.trip;
   var days = props.days;
   var go = props.go;
+  var setTrips = props.setTrips;
   var stFiles = useState([]);
   var files = stFiles[0]; var setFiles = stFiles[1];
   var stLoading = useState(true);
   var loading = stLoading[0]; var setLoading = stLoading[1];
+  var stEditIdx = useState(null);
+  var editIdx = stEditIdx[0]; var setEditIdx = stEditIdx[1];
+  var stEditName = useState("");
+  var editName = stEditName[0]; var setEditName = stEditName[1];
 
   useEffect(function() {
-    // Load all files from IndexedDB for this trip
     var allDocs = [];
-    days.forEach(function(day) {
-      (day.events || []).forEach(function(ev) {
-        (ev.docs || []).forEach(function(d) {
+    days.forEach(function(day, di) {
+      (day.events || []).forEach(function(ev, ei) {
+        (ev.docs || []).forEach(function(d, doci) {
           if (d) {
             var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : d;
             allDocs.push({
@@ -2214,7 +2248,9 @@ function DocumentsScreen(props) {
               eventTitle: ev.title,
               eventIcon: ev.icon,
               dayLabel: day.label,
-              date: day.date
+              dayIdx: di,
+              evIdx: ei,
+              docIdx: doci
             });
           }
         });
@@ -2239,12 +2275,64 @@ function DocumentsScreen(props) {
     }
   }
 
+  function deleteFile(doc) {
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== trip.id) return t;
+        var newDays = t.days.map(function(day, di) {
+          if (di !== doc.dayIdx) return day;
+          return Object.assign({}, day, {
+            events: day.events.map(function(ev, ei) {
+              if (ei !== doc.evIdx) return ev;
+              return Object.assign({}, ev, {
+                docs: ev.docs.filter(function(_, doci) { return doci !== doc.docIdx; })
+              });
+            })
+          });
+        });
+        return Object.assign({}, t, {days: newDays});
+      });
+    });
+  }
+
+  function startRename(doc, i) {
+    setEditIdx(i);
+    setEditName(doc.fileName);
+  }
+
+  function saveRename(doc) {
+    if (!editName.trim()) return;
+    var newName = editName.trim();
+    setTrips(function(prev) {
+      return prev.map(function(t) {
+        if (t.id !== trip.id) return t;
+        var newDays = t.days.map(function(day, di) {
+          if (di !== doc.dayIdx) return day;
+          return Object.assign({}, day, {
+            events: day.events.map(function(ev, ei) {
+              if (ei !== doc.evIdx) return ev;
+              return Object.assign({}, ev, {
+                docs: ev.docs.map(function(d, doci) {
+                  if (doci !== doc.docIdx) return d;
+                  var docObj = typeof d === "string" ? {name:d,type:"",size:0,data:null} : d;
+                  return Object.assign({}, docObj, {name: newName});
+                })
+              });
+            })
+          });
+        });
+        return Object.assign({}, t, {days: newDays});
+      });
+    });
+    setEditIdx(null);
+    setEditName("");
+  }
+
   function getIcon(type) {
     if (!type) return "📄";
     if (type.startsWith("image/")) return "🖼️";
     if (type === "application/pdf") return "📋";
     if (type.includes("word")) return "📝";
-    if (type.includes("excel") || type.includes("sheet")) return "📊";
     return "📄";
   }
 
@@ -2255,16 +2343,17 @@ function DocumentsScreen(props) {
   }
 
   return (
-    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column"}}>
-      <div style={{background:"linear-gradient(to bottom,rgb(15,23,42),rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)"}}>
+    <div style={{minHeight:"100vh",background:"rgb(15,23,42)",color:"white",display:"flex",flexDirection:"column",position:"relative"}}>
+      {trip && trip.photo && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:0,backgroundImage:"url("+trip.photo+")",backgroundSize:"cover",backgroundPosition:"center",opacity:0.12,pointerEvents:"none"}} />}
+      <div style={{background:"linear-gradient(to bottom,rgb(15,23,42),rgb(2,6,23))",padding:"48px 20px 16px",borderBottom:"1px solid rgba(30,41,59,0.8)",position:"relative",zIndex:1}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
           <button onClick={function(){go("timeline");}} style={{background:"rgba(30,41,59,0.8)",border:"1px solid rgba(71,85,105,0.6)",borderRadius:"12px",padding:"8px 16px",color:"rgb(148,163,184)",fontSize:"14px",fontFamily:"sans-serif",cursor:"pointer"}}>Back</button>
         </div>
         <p style={{color:"rgb(249,115,22)",fontSize:"12px",fontFamily:"sans-serif",textTransform:"uppercase",letterSpacing:"0.1em",margin:"0 0 2px"}}>{trip.name}</p>
         <h1 style={{color:"white",fontSize:"22px",fontFamily:"Georgia,serif",fontWeight:"bold",margin:"0 0 4px"}}>📁 Documents</h1>
-        <p style={{color:"rgb(100,116,139)",fontSize:"12px",fontFamily:"sans-serif",margin:0}}>{files.length} file{files.length !== 1 ? "s" : ""} attached across all events</p>
+        <p style={{color:"rgb(100,116,139)",fontSize:"12px",fontFamily:"sans-serif",margin:0}}>{files.length} file{files.length !== 1 ? "s" : ""} across all events</p>
       </div>
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 90px"}}>
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px 90px",position:"relative",zIndex:1}}>
         {loading && <p style={{color:"rgb(100,116,139)",fontFamily:"sans-serif",textAlign:"center",padding:"40px"}}>Loading...</p>}
         {!loading && files.length === 0 && (
           <div style={{textAlign:"center",padding:"60px 20px"}}>
@@ -2273,24 +2362,46 @@ function DocumentsScreen(props) {
             <p style={{color:"rgb(71,85,105)",fontFamily:"sans-serif",fontSize:"12px",marginTop:"4px"}}>Add files when creating or editing events</p>
           </div>
         )}
-        {!loading && files.length > 0 && (
-          <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-            {files.map(function(doc, i) {
-              return (
-                <div key={i} onClick={function(){openFile(doc);}}
-                  style={{background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"14px",padding:"14px",cursor:"pointer",display:"flex",gap:"12px",alignItems:"center"}}>
-                  <div style={{fontSize:"28px",flexShrink:0}}>{getIcon(doc.fileType)}</div>
-                  <div style={{flex:1,minWidth:0}}>
+        {!loading && files.map(function(doc, i) {
+          return (
+            <div key={i} style={{background:"rgba(30,41,59,0.6)",border:"1px solid rgba(71,85,105,0.4)",borderRadius:"14px",padding:"14px",marginBottom:"10px"}}>
+              {editIdx === i ? (
+                <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={function(e){setEditName(e.target.value);}}
+                    autoFocus
+                    style={{background:"rgba(15,23,42,0.8)",border:"1px solid rgba(249,115,22,0.5)",borderRadius:"8px",padding:"8px 12px",color:"white",fontSize:"13px",fontFamily:"sans-serif",outline:"none"}}
+                  />
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button onClick={function(){setEditIdx(null);}} style={{flex:1,padding:"8px",background:"transparent",border:"1px solid rgba(71,85,105,0.5)",borderRadius:"8px",color:"rgb(148,163,184)",fontSize:"12px",fontFamily:"sans-serif",cursor:"pointer"}}>Cancel</button>
+                    <button onClick={function(){saveRename(doc);}} style={{flex:2,padding:"8px",background:"rgb(249,115,22)",border:"none",borderRadius:"8px",color:"white",fontSize:"12px",fontFamily:"sans-serif",cursor:"pointer",fontWeight:"600"}}>Save Name</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
+                  <div onClick={function(){openFile(doc);}} style={{fontSize:"28px",flexShrink:0,cursor:doc.data?"pointer":"default"}}>{getIcon(doc.fileType)}</div>
+                  <div onClick={function(){openFile(doc);}} style={{flex:1,minWidth:0,cursor:doc.data?"pointer":"default"}}>
                     <div style={{color:"white",fontSize:"14px",fontFamily:"sans-serif",fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.fileName}</div>
                     <div style={{color:"rgb(249,115,22)",fontSize:"11px",fontFamily:"sans-serif",marginTop:"2px"}}>{doc.eventIcon} {doc.eventTitle}</div>
                     <div style={{color:"rgb(100,116,139)",fontSize:"11px",fontFamily:"sans-serif",marginTop:"1px"}}>{doc.dayLabel}{doc.fileSize ? " · " + formatSize(doc.fileSize) : ""}</div>
                   </div>
-                  <div style={{color:"rgb(100,116,139)",fontSize:"20px",flexShrink:0}}>›</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:"4px",flexShrink:0}}>
+                    <button onClick={function(){startRename(doc,i);}}
+                      style={{background:"rgba(59,130,246,0.15)",border:"1px solid rgba(59,130,246,0.3)",borderRadius:"8px",padding:"5px 10px",color:"rgb(147,197,253)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>
+                      ✏️ Rename
+                    </button>
+                    <button onClick={function(){if(window.confirm("Delete "+doc.fileName+"?"))deleteFile(doc);}}
+                      style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:"8px",padding:"5px 10px",color:"rgb(252,165,165)",fontSize:"11px",fontFamily:"sans-serif",cursor:"pointer"}}>
+                      🗑️ Delete
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })}
       </div>
       <BottomNav active="documents" go={go} />
     </div>
