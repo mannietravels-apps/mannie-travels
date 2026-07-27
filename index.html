@@ -2,13 +2,29 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Mannie Travels" />
     <link rel="manifest" href="/manifest.json" />
     <title>Mannie Travels</title>
+    <style>
+      html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        height: 100%;
+        overflow-y: auto;
+        overscroll-behavior: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
