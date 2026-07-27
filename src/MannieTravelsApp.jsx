@@ -1660,14 +1660,18 @@ function GlanceScreen(props) {
 
             <button onClick={function() {
               var html = buildHtmlEmail(hideCosts);
-              var blob = new Blob([html], {type:"text/html"});
-              var url = URL.createObjectURL(blob);
-              var win = window.open(url, "_blank");
-              if (!win) {
-                var a = document.createElement("a");
-                a.href = url;
-                a.download = "itinerary.html";
-                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              var tripName = trip.name;
+              var toolbar = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media print{#toolbar{display:none!important}}</style></head><body style="margin:0">' +
+                '<div id="toolbar" style="position:fixed;top:0;left:0;right:0;background:#0f172a;padding:10px 16px;display:flex;gap:8px;align-items:center;z-index:999;border-bottom:2px solid #f97316">' +
+                '<span style="color:#f97316;font-family:sans-serif;font-size:13px;font-weight:bold;flex:1">' + tripName + '</span>' +
+                '<button onclick="window.print()" style="background:#f97316;color:white;padding:8px 14px;border-radius:8px;border:none;font-family:sans-serif;font-size:13px;cursor:pointer;font-weight:bold">🖨️ Save as PDF</button>' +
+                '</div>' +
+                '<div style="margin-top:52px">';
+              var newWin = window.open("", "_blank");
+              if (newWin) {
+                newWin.document.open();
+                newWin.document.write(toolbar + html + '</div></body></html>');
+                newWin.document.close();
               }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
               📋 Itinerary
