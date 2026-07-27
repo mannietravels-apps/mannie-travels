@@ -1681,23 +1681,21 @@ function GlanceScreen(props) {
                 document.body.appendChild(a2); a2.click(); document.body.removeChild(a2);
               }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
-              📋 Itinerary
+              📋 Share Itinerary
             </button>
             <button onClick={function() {
-              var text = buildText(hideCosts);
-              var subject = trip.name + " Itinerary";
-              try {
-                if (navigator.share) {
-                  navigator.share({ title: subject, text: text });
-                } else {
-                  window.location.href = "mailto:?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(text);
-                }
-              } catch(err) {
-                window.location.href = "mailto:?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(text);
+              var html = buildHtmlEmail(hideCosts);
+              var tripName = trip.name;
+              var newWin = window.open("", "_blank");
+              if (newWin) {
+                newWin.document.open();
+                newWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media print{#tb{display:none!important}body{margin:0}}</style></head><body style="margin:0"><div id="tb" style="position:fixed;top:0;left:0;right:0;background:#0f172a;padding:10px 16px;display:flex;gap:8px;align-items:center;z-index:999;border-bottom:2px solid #f97316"><span style="color:#f97316;font-family:sans-serif;font-size:13px;font-weight:bold;flex:1">' + tripName + '</span><button onclick="window.print()" style="background:#f97316;color:white;padding:8px 14px;border-radius:8px;border:none;font-family:sans-serif;font-size:14px;cursor:pointer;font-weight:bold">🖨️ Save as PDF</button><button onclick="window.close()" style="background:transparent;color:#94a3b8;padding:8px 12px;border-radius:8px;border:1px solid #475569;font-family:sans-serif;font-size:13px;cursor:pointer">✕</button></div><div style="margin-top:52px">' + html + '</div></body></html>');
+                newWin.document.close();
               }
             }} style={{fontSize:"11px",padding:"6px 10px",borderRadius:"10px",fontFamily:"sans-serif",cursor:"pointer",border:"1px solid rgba(71,85,105,0.7)",background:"rgba(30,41,59,0.8)",color:"rgb(148,163,184)"}}>
-              ✉️ Share
+              🖨️ PDF
             </button>
+            
             <button onClick={function() {
               var html = buildHtmlEmail(hideCosts);
               var blob = new Blob([html], {type:"text/html"});
